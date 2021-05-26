@@ -6,5 +6,5 @@
 (define (pl-done? wd)
   (vowel? (first wd)))
 
- (define (vowel? letter)
+(define (vowel? letter)
   (member? letter '(a e i o u)))

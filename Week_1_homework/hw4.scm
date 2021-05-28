@@ -6,13 +6,14 @@
 (define sent '(1 2 3 4 5))
 (define sent2 '(5 4 3 2 1))
 (define sent3 '(1 2 3 2 1))
+(define sent4 '(1 2 5 6 10))
 
 (define re #t)
 (define counter (first sent))
 (define (ordered? sent)
      (if (empty? (bf sent))
           re
-          (if  (equal? (- (first (bf sent)) (first sent)) 1) (ordered? (bf sent)) #f)))
+          (if  (> (first (bf sent)) (first sent)) (ordered? (bf sent)) #f)))
 
      
 

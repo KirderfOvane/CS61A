@@ -22,7 +22,9 @@
    if on the other hand, will be considered a special form and will use the applicative order evaluation.
    So it breaks down every argument and procedure to primites _before_ eval.
    Then it evals the cond/test first and see that it is false and therefore never evaluate the true clause.
-   But why is it false on estt ?
+   But why is it false on estt ? 
+   It isn't false on estt, it just never gets to evaluate it as it is stuck in an endless loop . Why you see the word shifting in the trace is because
+   it executes the else-clause over and over again.
    
 -> pigl with wd = test
 ... -> pigl with wd = estt

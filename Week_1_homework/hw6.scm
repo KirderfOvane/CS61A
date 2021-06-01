@@ -46,3 +46,9 @@
 ; The advantage with special form is that it is faster, it can exit earlier.
 ; The advantage with ordinary function is that it is easier to read.
 
+(define (f x y)
+  (let ((a (+ 1 (* 2 3)))
+        (b (- 1 6)))
+    (+ (* 3 (square a))
+       (* 5 6)
+       (* b 1)))

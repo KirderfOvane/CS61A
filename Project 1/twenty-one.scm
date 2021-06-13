@@ -70,7 +70,7 @@ Picture cards are worth 10 points, an ace is worth either 1 or 11 at the player�
 ;the dealer’s face-up card (dealer-up-card) is a single word (not a sentence).
 
   (define (strategy customer-hand-so-far dealer-up-card)
-	()
+	(< (best-total customer-hand-so-far) 21)
   )
 
 #| 
@@ -99,10 +99,10 @@ Write best-total. |#
 		(if (equal? sent '())
 		0
 		(if (equal? (bl (first sent)) 'a ) 
-			(+ 11 (best-total (bf sent))) 
+			(+ 11 (total (bf sent))) 
 			(if (or (equal? (bl (first sent)) 'k ) (equal? (bl (first sent)) 'q ) (equal? (bl (first sent)) 'j )) 
-				(+ 10 (best-total (bf sent))) 
-				(+ (bl (first sent)) (best-total (bf sent)))
+				(+ 10 (total (bf sent))) 
+				(+ (bl (first sent)) (total (bf sent)))
 			)
 		)
 		)
@@ -110,7 +110,7 @@ Write best-total. |#
 	(define (ace-check sent points)
 		(if (< points 21)
 			points
-			(iter sent points)
+			(ace-check-iter sent points)
 		)
 	)
 	(define (ace-check-iter sent points)
@@ -125,21 +125,21 @@ Write best-total. |#
 	(ace-check sent (total sent))
 )
 ; testing
-(best-total '(ad 8s))
-(best-total '(ad kd))
-(best-total '(ad kd qd jd 3s 5d 4h kh ad))
-(best-total '(ad 8s kd))
-(best-total '(ad 3s kd))
-
-
-
+(best-total '(ad 8s)) ;> 19
+(best-total '(ad kd)) ;> 21
+(best-total '(ad kd qd jd 3s 5d 4h kh ad)) ;> 54
+(best-total '(ad 8s kd)) ;> 19
+(best-total '(ad 3s kd)) ;> 14
+(best-total '(ad ad)) ;> 12
 
 ; 2. Define a strategy procedure stop-at-17 that’s identical to the dealer’s, i.e., takes a card if and only if the total so far is less than 17.
 
-(define (stop-at-17)
-	()
+(define (stop-at-17 customer-hand-so-far dealer-up-card)
+	 (< (best-total customer-hand-so-far) 17)
 )
-
+; testing
+(stop-at-17 '(ad 9s kd) '(ad 9s kd)) ;> #f
+(stop-at-17 '(ad 3s kd) '(ad 3s kd)) ;> #t
 
 #| 3. Write a procedure play-n such that (play-n strategy n)plays n games with a given strategy and returns the number of games that the customer won minus the number that s/he lost. 
 Use this to exercise your strategy from problem 2,as well as strategies from the problems below. 

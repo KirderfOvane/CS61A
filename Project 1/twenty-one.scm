@@ -93,83 +93,6 @@ For example:
 
 Write best-total. |#
 
-; working with ace and picture cards.
-(define (best-total sent)
-	(if (equal? sent '())
-      0
-      (if (equal? (bl (first sent)) 'a ) 
-	   	  (+ 11 (best-total (bf sent))) 
-	  	  (if (or (equal? (bl (first sent)) 'k ) (equal? (bl (first sent)) 'q ) (equal? (bl (first sent)) 'j )) 
-	   	  	  (+ 10 (best-total (bf sent))) 
-	  	      0
-	  	  )
-	  )
-	)
-)
-
-
-
-
-
-
-(define (ace-check sent points)
-	(if (< points 21)
-		points
-		(iter sent points)
-	)
-)
-(define (iter sent points)
-	(if (equal? sent '())
-		points
-		(if (and (equal? (bl (first sent)) 'a ) (> points 21))
-			(iter (bf sent) (- points 10))
-			(iter (bf sent) points)
-		)
-	)
-)
-
-; working with ace ,picture cards and regular cards and has a  ace-checker external.
-(define (best-total sent)
-	(if (equal? sent '())
-      0
-      (if (equal? (bl (first sent)) 'a ) 
-	   	  (+ 11 (best-total (bf sent))) 
-	  	  (if (or (equal? (bl (first sent)) 'k ) (equal? (bl (first sent)) 'q ) (equal? (bl (first sent)) 'j )) 
-	   	  	  (+ 10 (best-total (bf sent))) 
-	  	      (+ (bl (first sent)) (best-total (bf sent)))
-	  	  )
-	  )
-	)
-)
-
-
-(best-total '(ad 8s))
-(best-total '(ad kd))
-(best-total '(ad kd qd jd 3s 5d 4h kh ad))
-(best-total '(ad 8s kd))
-(best-total '(ad 3s kd))
-
-(ace-check '(ad kd qd jd 3s 5d 4h kh ad) (best-total '(ad kd qd jd 3s 5d 4h kh ad)))
-(ace-check '(ad 3s kd) (best-total '(ad 3s kd)))
-
-
-; refactor
-(define (ace-check sent points)
-	(if (< points 21)
-		points
-		(iter sent points)
-	)
-)
-(define (iter sent points)
-	(if (equal? sent '())
-		points
-		(if (and (equal? (bl (first sent)) 'a ) (> points 21))
-			(iter (bf sent) (- points 10))
-			(iter (bf sent) points)
-		)
-	)
-)
-
 ; working with ace ,picture cards ,regular cards and has a ace-checker.
 (define (best-total sent)
 	(define (total sent)
@@ -201,6 +124,12 @@ Write best-total. |#
 	)
 	(ace-check sent (total sent))
 )
+; testing
+(best-total '(ad 8s))
+(best-total '(ad kd))
+(best-total '(ad kd qd jd 3s 5d 4h kh ad))
+(best-total '(ad 8s kd))
+(best-total '(ad 3s kd))
 
 
 

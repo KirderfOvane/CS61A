@@ -141,38 +141,117 @@ Write best-total. |#
 (stop-at-17 '(ad 9s kd) '(ad 9s kd)) ;> #f
 (stop-at-17 '(ad 3s kd) '(ad 3s kd)) ;> #t
 
-#| 3. Write a procedure play-n such that (play-n strategy n)plays n games with a given strategy and returns the number of games that the customer won minus the number that s/he lost. 
+#| 3. Write a procedure play-n such that (play-n strategy n)plays n games with a given strategy and returns the number of games that 
+the customer won minus the number that s/he lost. 
 Use this to exercise your strategy from problem 2,as well as strategies from the problems below. 
 To make sure your strategies do what you think they do,trace them when possible.
-Don’t forget: a “strategy” is a procedure! We’re asking you to write a procedure that takes another procedure as an argument. This comment is also relevant to parts 6 and 7 below. |#
+Don’t forget: a “strategy” is a procedure! We’re asking you to write a procedure that takes another procedure as an argument. 
+This comment is also relevant to parts 6 and 7 below. |#
 
 (define (play-n strategy n)
-	()
+	(if (<= n 0)
+		0
+		(+ (twenty-one strategy) (play-n strategy (- n 1)))
+	)
 )
+;testing
+(trace twenty-one)
+(play-n stop-at-17 5)
+#|
+.. -> twenty-one with strategy = #[closure arglist=(customer-hand-so-far dealer-up-card) 7fdb8818]
+.. <- twenty-one returns -1
+.. -> twenty-one with strategy = #[closure arglist=(customer-hand-so-far dealer-up-card) 7fdb8818]
+.. <- twenty-one returns 1
+.. -> twenty-one with strategy = #[closure arglist=(customer-hand-so-far dealer-up-card) 7fdb8818]
+.. <- twenty-one returns 1
+.. -> twenty-one with strategy = #[closure arglist=(customer-hand-so-far dealer-up-card) 7fdb8818]
+.. <- twenty-one returns -1
+.. -> twenty-one with strategy = #[closure arglist=(customer-hand-so-far dealer-up-card) 7fdb8818]
+.. <- twenty-one returns 0
+0 
+|#
 
 
 #| 4. Define a strategy named dealer-sensitive that “hits” (takes a card) if (and only if) the dealer has an ace, 7, 8, 9, 10, or picture card showing, and the customer has less than 17, 
 or the dealer has a 2, 3, 4, 5, or 6 showing, and the customer has less than 12. 
 (The idea is that in the second case, the dealer is much more likely to “bust” (go over 21), since there are more 10-pointers than anything else.) |#
 
-(define (dealer-sensitive)
-	()
+
+(define (dealer-sensitive customer-hand-so-far dealer-up-card)
+	(define upper-bounds '(a k q j 7 8 9 10))
+	(define lower-bounds '(2 3 4 5 6))
+	(define (contains? letter sentence-filter)
+  		(member? letter sentence-filter))
+	(cond ((and (< (best-total customer-hand-so-far) 17) (contains? (first dealer-up-card) upper-bounds)) #t)
+          ((and (< (best-total customer-hand-so-far) 12) (contains? (first dealer-up-card) lower-bounds)) #t)
+          (else #f)
+	)
 )
+
+;testing contains procedure : may not work after last refactor when they where defined internally inside dealer-sensitive.
+(contains? (first (word "ah")) upper-bounds) ;> #t
+(contains? (first (word "2h")) upper-bounds) ;> #f
+(contains? (first (word "ah")) lower-bounds) ;> #f
+(contains? (first (word "2h")) lower-bounds) ;> #t
+;testing first condition : ace,7,8,9,10 picture card and customer hand less than 17.
+(dealer-sensitive '(ad) (word "7h")) ;> #t
+(dealer-sensitive '(kd) (word "ah")) ;> #t
+;testing second condition : 2,3,4,5,6 and customer less than 12.
+(dealer-sensitive '(9s) (word "2h")) ;> #t
+(dealer-sensitive '(9s 2s) (word "6h")) ;> #t
+;testing third condition
+(dealer-sensitive '(9s 3s) (word "6h")) ;> #f
+(dealer-sensitive '(9s 10s) (word "ah")) ;> #f
+
 
 #| 5. Generalize part 2 above by defining a function stop-at. (stop-at n) should return a strategy that keeps hitting until a hand’s total is no r more. 
 For example, (stop-at 17) is equivalent to the strategy in part 2. |#
 
-(define (stop-at n)
-	()
+(define (stop-at n customer-hand-so-far dealer-up-card)
+	 (< (best-total customer-hand-so-far) n)
 )
+
+; testing , dealer-up-card is not used so input arg is just a placeholder.
+(stop-at 17 '(ad 9s kd) (word "6h")) ;> #f
+(stop-at 17 '(ad 3s kd) '(ad 3s kd)) ;> #t
+(stop-at 12 '(ad 3s kd) '(ad 3s kd)) ;> #f
+(stop-at 20 '(ad 8s kd) '(ad 8s kd)) ;> #t
+
 
 #| 6. On Valentine’s Day, your local casino has a special deal: If you win a round of 21 with a heart in your hand, they pay double. 
 You decide that if you have a heart in your hand, you should play more aggressively than usual. 
 Write a valentine strategy that stops at 17 unless you have a heart in your hand, in which case it stops at 19. |#
 
-(define (valentine hand)
-	()
+(define (valentine customer-hand-so-far dealer-up-card)
+	(if (equal? customer-hand-so-far '()) 
+		(stop-at 17 customer-hand-so-far dealer-up-card)
+		(if (equal? (last (first customer-hand-so-far)) 'h ) 
+			(stop-at 19 customer-hand-so-far dealer-up-card)
+			(valentine (bf customer-hand-so-far) dealer-up-card)
+		)
+	)
 )
+
+;testing
+(valentine '(ad 8s) (word "ah")) ;> stop-at 17 #t
+#| 
+STk> (valentine '(ad 8s) (word "ah"))
+.. -> stop-at with n = 17,  customer-hand-so-far = (),  dealer-up-card = ah
+.. <- stop-at returns #t
+#t 
+|#
+(valentine '(ah kd) (word "ah")) ;> stop-at 19 #f
+#| 
+STk> (valentine '(ah kd) (word "ah"))
+.. -> stop-at with n = 19,  customer-hand-so-far = (ah kd),  dealer-up-card = ah
+.. <- stop-at returns #f
+#f 
+|#
+(valentine '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) ;> stop-at 19 #t
+(valentine '(ad 8s kd) (word "ah")) ;> stop-at 17 #t
+(valentine '(ad 3s kd) (word "ah")) ;> stop-at 17 #t
+(valentine '(ad ad) (word "ah")) ;> stop-at 17 #t
+
 
 #| 7. Generalize part 6 above by defining a function suit-strategy that takes three arguments: a suit (h,s,d, orc), a strategy to be used if your hand doesn’t include that suit,
 and a strategy to be used if your hand does include that suit. 

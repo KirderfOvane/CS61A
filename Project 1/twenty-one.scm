@@ -253,14 +253,23 @@ STk> (valentine '(ah kd) (word "ah"))
 (valentine '(ad ad) (word "ah")) ;> stop-at 17 #t
 
 
-#| 7. Generalize part 6 above by defining a function suit-strategy that takes three arguments: a suit (h,s,d, orc), a strategy to be used if your hand doesn’t include that suit,
+#| 7. Generalize part 6 above by defining a function suit-strategy that takes three arguments: a suit (h,s,d, or c), a strategy to be used if your hand doesn’t include that suit,
 and a strategy to be used if your hand does include that suit. 
-It should return a strategythat behaves accordingly. 
+It should return a strategy that behaves accordingly. 
 Show how you could use this function and the stop-at function from part 5 to redefine the valentine strategy of part 6. |#
 
-(define (suit-strategy)
-	()
+(define (suit-strategy suit strat-when-not-suit strat-when-suit customer-hand-so-far dealer-up-card)
+	(if (equal? customer-hand-so-far '()) 
+		strat-when-not-suit
+		(if (equal? (last (first customer-hand-so-far)) suit ) 
+			strat-when-suit
+			(suit-strategy suit strat-when-not-suit strat-when-suit (bf customer-hand-so-far) dealer-up-card)
+		)
+	)
 )
+;testing
+(suit-strategy 'h (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 19 '(ad 3s kd) '(ad 3s kd)) '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) ;>#t
+(suit-strategy 'd (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 19 '(ad 3s kd) '(ad 3s kd)) '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) ;>#t
 
 #| 8. Define a function majority that takes three strategies as arguments and produces a strategy as a result, 
 such that the result strategy always decides whether or not to “hit” by consulting the three argument strategies, 
@@ -268,17 +277,85 @@ and going with the majority. That is, the result strategy should return #t if an
 Using the three strategies from parts 2, 4, and 6 as argument strategies, play a few games using the “majority strategy” formed from these three. |#
 
 (define (majority s1 s2 s3)
-	()
+	(if (<= 1 (+
+				(if s1 
+					1
+					0
+				)
+				(if s2 
+					1
+					0
+				)
+				(if s3
+					1
+					0
+				)
+			  )
+		)
+		#t
+		#f
+	)
 )
+;testing
+(majority (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 12 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah"))) ;> 0 #f
+(majority (stop-at 17 '(4h kh ad) (word "ah")) (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 12 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah"))) ;> 1 #t
+(majority (stop-at 17 '(4h kh ad) (word "ah")) (stop-at 17 '(ad kd qd jd 3s 5d 4h kh ad) (word "ah")) (stop-at 12 '(ad) (word "ah"))) ;> 2 #t
 
 #| 9. Some people just can’t resist taking one more card. 
 Write a procedure reckless that takes a strategy as its argument and returns another strategy. 
 This new strategy should take one more card than the original would. 
 (In other words, the new strategy should stand if the old strategy would stand on the butlast of the customer’s hand.) |#
 
-(define (reckless strat)
-	()
+;step 1: write normal function that returns value directly.
+(define (reckless strat)	
+	(define (iter strat num-of-cards)
+		(if (equal? (strat (se (word num-of-cards 'h )) (word "a")) #f) 
+			(stop-at (+ num-of-cards 1) (se (word num-of-cards 'h )) (word "a"))
+			(iter strat (+ num-of-cards 1))
+		)
+	)
+	(iter strat 0)
 )
+
+; testing: done with refactored iter (+ num-of-cards 1) to see actual num of cards below.
+(define (iter strat num-of-cards)
+	(if (equal? (strat (se (word num-of-cards 'h )) (word "a")) #f) 
+		(+ num-of-cards 1); edit here for testing purposes
+		(iter strat (+ num-of-cards 1))
+	)
+)
+(reckless valentine) ;> 20
+(reckless stop-at-17) ;> 18
+
+;step 2: make reckless be returned as a function for twenty-one.
+(define (one-more-card fn n)
+	(lambda (x y) (fn n x y)
+	
+	)
+)
+;testing
+((one-more-card stop-at 17) '(ad kd qd jd 3s 5d 4h kh ad) (word "ah"))
+
+
+(define (reckless strat)
+	(define (one-more-card fn n)
+		(lambda (x y) (fn n x y)
+	
+		)
+	)	
+	(define (iter strat num-of-cards)
+		(if (equal? (strat (se (word num-of-cards 'h )) (word "a")) #f) 
+			(one-more-card stop-at (+ num-of-cards 1))
+			(iter strat (+ num-of-cards 1))
+		)
+	)
+	(iter strat 0)
+)
+; final function testing
+(twenty-one (reckless valentine))
+(twenty-one (reckless stop-at-17))
+(twenty-one (reckless dealer-sensitive))
+
 
 #| 10. Copy your Scheme file to a new file, 
 named joker.scm, before you begin this problem.

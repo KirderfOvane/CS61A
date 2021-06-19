@@ -4,12 +4,7 @@ A card is represented as a word, such as 10s for the ten of spades.
 Picture cards are worth 10 points, an ace is worth either 1 or 11 at the player’s option.  
 |#
 
-
-;Invoking(twenty-one strategy) plays a game using the given strategy and a 
-; randomly shuffled deck, and returns 1, 0, or −1 according to whether the customer won, tied, or lost.
-(define (twenty-one strategy)
-   ; Each player is dealt two cards, with one of the dealer’s cards face up. 
-   ; The dealer always takes another card(“hits”) if he has 16 or less,and always stops (“stands”) with 17 or more.
+(define (twenty-one strategy)   
   (define (play-dealer customer-hand dealer-hand-so-far rest-of-deck)
     (cond ((> (best-total dealer-hand-so-far) 21) 1)
 	  ((< (best-total dealer-hand-so-far) 17)
@@ -21,9 +16,9 @@ Picture cards are worth 10 points, an ace is worth either 1 or 11 at the player�
 	  (else 1)))
 
   (define (play-customer customer-hand-so-far dealer-up-card rest-of-deck)
-    (cond ((> (best-total customer-hand-so-far) 21) -1) ;best-total konverterar ("5s" "4h") till siffror och jämför med 21. Om över 21 return -1, förlust. Om inte, kör strategy.
-	  ((strategy customer-hand-so-far dealer-up-card)                      ;The customer’s hand is represented as a sentence in which each word is a card
-	   (play-customer (se customer-hand-so-far (first rest-of-deck))	   ;the dealer’s face-up card (dealer-up-card) is a single word (not a sentence).
+    (cond ((> (best-total customer-hand-so-far) 21) -1) 
+	  ((strategy customer-hand-so-far dealer-up-card)                      
+	   (play-customer (se customer-hand-so-far (first rest-of-deck))	   
 			  dealer-up-card
 			  (bf rest-of-deck)))
 	  (else
@@ -31,24 +26,19 @@ Picture cards are worth 10 points, an ace is worth either 1 or 11 at the player�
 			(se dealer-up-card (first rest-of-deck))
 			(bf rest-of-deck)))))
 
-  (let ((deck (make-deck)));("5s" "4h" jc "4c" "8c" "9c" "5h" ks jh qh "6s" "8h" ad "7d" "10d" ah "6d" "6h" ac "7h" "2s" "4d" "3s" qd qc jd "2c" "8s" "3d" "3h" "4s" "3c" "7s" "8d" "9h" kd "10h" "10c" qs kh "2d" js "10s" "7c" kc "2h" "5d" "5c" "9s" "6c" "9d" as)
-    (play-customer (se (first deck) (first (bf deck))) ; play/deal the first 2 cards in the deck to the customer -> ("5s" "4h")
-		   (first (bf (bf deck))) ;third card in deck dealed as the up card.-> jc
-		   (bf (bf (bf deck))))) ) ;rest of the deck -> "4c" "8c" "9c".....
+  (let ((deck (make-deck)))
+    (play-customer (se (first deck) (first (bf deck))) 
+		   (first (bf (bf deck))) 
+		   (bf (bf (bf deck))))) ) 
 
-; #####################################################################
+
 (define (make-ordered-deck)
   (define (make-suit s)
     (every (lambda (rank) (word rank s)) '(A 2 3 4 5 6 7 8 9 10 J Q K)) )
   (se (make-suit 'H) (make-suit 'S) (make-suit 'D) (make-suit 'C)) ) 
-  ;(ah "2h" "3h" "4h" "5h" "6h" "7h" "8h" "9h" "10h" jh qh kh 
-  ; as "2s" "3s" "4s" "5s" "6s" "7s" "8s" "9s" "10s" js qs ks
-  ; ad "2d" "3d" "4d" "5d" "6d" "7d" "8d" "9d" "10d" jd qd kd 
-  ; ac "2c" "3c" "4c" "5c" "6c" "7c" "8c" "9c" "10c" jc qc kc)
-  ;####################################################################
 
- ;we reshuffle the deck after each round, so strategies based on remembering which cards were dealt earlier are not possible.
-(define (make-deck)
+
+ (define (make-deck)
   (define (shuffle deck size)
     (define (move-card in out which)
       (if (= which 0)
@@ -58,10 +48,6 @@ Picture cards are worth 10 points, an ace is worth either 1 or 11 at the player�
 	deck
     	(move-card deck '() (random size)) ))
   (shuffle (make-ordered-deck) 52) )
-; ("10d" "3s" "8s" "3c" "9s" kd ad "9c" ac qs kh "5h" ah as "6c" "7s" js 
-; "4c" "2h" "7c" qh qc "10h" jc "5s" "10s" "10c" "4s" "2c" "7h" "7d" qd 
-; "3d" "5c" jd "2d" "4d" "3h" "6s" "9d" "6h" "8c" "6d" kc "9h" "5d" "8d" 
-;  jh "4h" ks "8h" "2s")
 
 
 #| The strategy function should return a true or false output, which tells whether or not the customer wants another card.
@@ -180,19 +166,20 @@ or the dealer has a 2, 3, 4, 5, or 6 showing, and the customer has less than 12.
 (define (dealer-sensitive customer-hand-so-far dealer-up-card)
 	(define upper-bounds '(a k q j 7 8 9 10))
 	(define lower-bounds '(2 3 4 5 6))
-	(define (contains? letter sentence-filter)
-  		(member? letter sentence-filter))
 	(cond ((and (< (best-total customer-hand-so-far) 17) (contains? (first dealer-up-card) upper-bounds)) #t)
           ((and (< (best-total customer-hand-so-far) 12) (contains? (first dealer-up-card) lower-bounds)) #t)
           (else #f)
 	)
 )
-
+;helper function
+(define (contains? letter sentence-filter)
+  	(member? letter sentence-filter)
+)
 ;testing contains procedure : may not work after last refactor when they where defined internally inside dealer-sensitive.
-(contains? (first (word "ah")) upper-bounds) ;> #t
-(contains? (first (word "2h")) upper-bounds) ;> #f
-(contains? (first (word "ah")) lower-bounds) ;> #f
-(contains? (first (word "2h")) lower-bounds) ;> #t
+;(contains? (first (word "ah")) upper-bounds) ;> #t
+;(contains? (first (word "2h")) upper-bounds) ;> #f
+;(contains? (first (word "ah")) lower-bounds) ;> #f
+;(contains? (first (word "2h")) lower-bounds) ;> #t
 ;testing first condition : ace,7,8,9,10 picture card and customer hand less than 17.
 (dealer-sensitive '(ad) (word "7h")) ;> #t
 (dealer-sensitive '(kd) (word "ah")) ;> #t

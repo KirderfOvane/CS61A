@@ -101,13 +101,16 @@ Write best-total. |#
 	(define (total sent)
 		(if (equal? sent '())
 		0
-		(if (or (equal? (bl (first sent)) 'a ) (equal? (bl (first sent)) 'x )) ; added check for joker card here. If found, set 11 and continue
-			(+ 11 (total (bf sent))) 
-			(if (or (equal? (bl (first sent)) 'k ) (equal? (bl (first sent)) 'q ) (equal? (bl (first sent)) 'j )) 
-				(+ 10 (total (bf sent))) 
-				(+ (bl (first sent)) (total (bf sent)))
+			(if (equal? (bl (first sent)) 'a ) 
+					(+ 11 (total (bf sent))) 
+					(if (equal? (bl (first sent)) 'x ); added check for joker card here. If found, set 11 and continue
+						(+ 1 (total (bf sent)))
+						(if (or (equal? (bl (first sent)) 'k ) (equal? (bl (first sent)) 'q ) (equal? (bl (first sent)) 'j )) 
+							(+ 10 (total (bf sent))) 
+							(+ (bl (first sent)) (total (bf sent)))
+						)
+					)
 			)
-		)
 		)
 	)
 	(define (ace-check sent points)
@@ -138,21 +141,20 @@ Write best-total. |#
 		(define (joker-adjust-iter sent points count)
 			(if (or (equal? sent '()) (= count 0))
 				points
-				(if (and (= count 1) (< points 32))
-					21
-					(if (and (= count 2) (< points 41))
-						21
-						points
+				(if (and (= count 1) (> points 11)) 
+					21 ; one joker and more than 11 points
+					(if (and (= count 2)) 
+						21   ; two jokers
+						(+ points 10) ; one joker and less than 11 points
 					)
 				)
 			)
 		)
 		(if (< points 21)
-			points
 			(joker-adjust-iter sent points count)
+			points
 		)
 	)
-	
 	(joker-adjust sent (ace-check sent (total sent)) (joker-count sent 0))
 )
 ; testing
@@ -166,6 +168,7 @@ Write best-total. |#
 (best-total '(ad xj)) ;> 21
 (best-total '(xj xj)) ;> 21
 (best-total '(xj xj ad)) ;> 21  
+(best-total '(xj xj ad 10s 9s 8s 7s)) ;> 37, bust  
 
 ; 2. Define a strategy procedure stop-at-17 that’s identical to the dealer’s, i.e., takes a card if and only if the total so far is less than 17.
 

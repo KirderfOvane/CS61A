@@ -30,6 +30,43 @@ that have the same even-odd parity as the first argument. For example,
 (2 4 6) 
 |#
 
-(define (f x y . z) 
-    (+ (+ x y) . z)
+;helper procedure
+(define (reverse li) 
+    (define (length items)
+        (define (length-iter a count)
+            (if (null? a)
+                count
+                (length-iter (cdr a) 
+                            (+ 1 count))))
+        (length-iter items 0)
+    )
+    (define (iter li list-length)
+        (if (> 1 list-length)
+            li
+            (append (iter (cdr li) (- list-length 1)) (list (car li)))
+        )
+    )
+    (iter li (length li))
 )
+(define (iter x y i li)
+      (if (null? y)
+          li
+          (if (= (+ 2 i) (car y))
+              (iter x (cdr y) (+ 2 i) (append (list (car y)) li))
+              (iter x (cdr y) i li)
+          )
+      )
+)
+(define (same-parity x . y)
+  (if (null? y)
+      x
+      (reverse (iter x y x (list x)))
+  )
+)
+
+;testing
+(same-parity 1 2 3 4 5 6 7)
+(same-parity 1)
+(same-parity 2 3 4 5 6 7)
+
+ 

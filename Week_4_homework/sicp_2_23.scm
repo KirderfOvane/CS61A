@@ -47,3 +47,14 @@ Give an implementation of for-each.  |#
 
 ;testing
 (foreach square (list 1 2 3)) ;> (1 4 9)
+(foreach 
+ (lambda (x) (newline) (display x))
+ (list 57 321 88))
+; i failed with this problem as it should execute per element and not first collect a list and thenreturn individual elements.
+
+; correct solution
+(define (for-each proc lst)
+  (if (null? lst)
+      #t
+      (let ((ignored-result (proc (car lst))))
+	(for-each proc (cdr lst)))))

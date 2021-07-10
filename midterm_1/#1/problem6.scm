@@ -38,15 +38,25 @@ or whether the lengths of the words are in increasing order.
 
 
 (define (in-order? pred-fn sent)
-    (if (null? sent)
+    (if (empty? sent)
         #t
-        (if (pred-fn (first sent) (bf (first sent)))
-            (in-order? pred-fn (bf sent))
-            #f
+        (if (empty? (bf sent))
+            #t
+            (if (pred-fn (first sent) (first (bf sent)))
+                (in-order? pred-fn (bf sent))
+                #f
+            )
         )
+        
     )
 )
-
+(define (shorter? a b)
+        (< (count a) (count b)) )
+(in-order? < '(2 3 5 5 8 13))
+(in-order? <= '(2 3 5 5 8 13))
+(in-order? > '(23 14 7 5 2))
+(in-order? shorter? '(i saw them standing togetherr))
+(in-order? shorter? '(i saw her standing there))
 
 #| (Part b) Write a procedure order-checker that takes as its only argument a predicate function of two arguments. 
 Your procedure should return a predicate function with one argument, a sentence

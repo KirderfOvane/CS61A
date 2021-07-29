@@ -184,6 +184,11 @@ and three corresponding selectors origin-frame, edge1-frame, and edge2-frame  |#
 )
 
 ;draw-line: draws a line on the screen between two specified points, a segment.
+(define make-segment cons)
+(define start-segment car)
+(define end-segment cdr)
+
+
 
 ;painter takes a frame as argument and draws a particular image shifted and scaled to fit the
 ;frame
@@ -205,6 +210,11 @@ and three corresponding selectors origin-frame, edge1-frame, and edge2-frame  |#
   )
 )
 
+(define outline 
+  (segments->painter (list (make-segment (make-vect 0 0) (make-vect 0 1)) 
+                           (make-segment (make-vect 1 1) (make-vect 1 0))))
+)
+
 #| 
 The segments are given using coordinates with respect to the unit square. For each segment in the list, 
 the painter transforms the segment endpoints with the frame coordinate map and 
@@ -212,3 +222,124 @@ draws a line between the transformed points.
 |#
 
 #| Any procedure can serve as a painter, provided that it takes a frame as argument and draws something scaled to fit the frame. |#
+
+
+;manipulating painters:
+;manipulators works on the frame and it specifies the frame in point coordinates ,marking its corners,the old and the new transform.
+
+(define (transform-painter painter origin corner1 corner2)
+  (lambda (frame)
+    (let ((m (frame-coord-map frame)))
+      (let ((new-origin (m origin)))
+        (painter (make-frame new-origin (sub-vect (m corner1) new-origin) (sub-vect (m corner2) new-origin)))
+      )
+    )
+  )
+)
+
+;flip the painter images vertically:
+(define (flip-vert painter)
+  (transform-painter 
+   painter
+   (make-vect 0.0 1.0)   ; new origin
+   (make-vect 1.0 1.0)   ; new end of edge1
+   (make-vect 0.0 0.0)   ; new end of edge2
+  )
+)
+;another transform example:
+(define (shrink-to-upper-right painter)
+  (transform-painter painter
+                     (make-vect 0.5 0.5)
+                     (make-vect 1.0 0.5)
+                     (make-vect 0.5 1.0)
+  )
+)
+;another transform, rotate 90 counterclockwise:
+(define (rotate90 painter)
+  (transform-painter painter
+                     (make-vect 1.0 0.0)
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 0.0)))
+;squash inwards
+(define (squash-inwards painter)
+  (transform-painter painter
+                     (make-vect 0.0 0.0)
+                     (make-vect 0.65 0.35)
+                     (make-vect 0.35 0.65)))
+
+
+#| 
+Frame transformation is also the key to defining means of combining two or more painters. 
+The beside procedure, for example, takes two painters, 
+transforms them to paint in the left and right halves of an argument frame respectively, 
+and produces a new, compound painter. When the compound painter is given a frame, 
+it calls the first transformed painter to paint in the left half of the frame and calls the 
+second transformed painter to paint in the right half of the frame:  |#
+
+(define (beside painter1 painter2)
+  (let ((split-point (make-vect 0.5 0.0)))
+    (let ((paint-left  (transform-painter 
+                        painter1
+                        (make-vect 0.0 0.0)
+                        split-point
+                        (make-vect 0.0 1.0)))
+          (paint-right (transform-painter
+                        painter2
+                        split-point
+                        (make-vect 1.0 0.0)
+                        (make-vect 0.5 1.0)))
+          )
+      (lambda (frame)
+        (paint-left frame)
+        (paint-right frame)
+      )
+    )
+  )
+)
+
+;flip horiz
+(define (flip-horiz painter)
+  (let ((flipped-painter (transform-painter  ;flip horizontal
+                                painter
+                                (make-vect 1.0 0.0)   ; new origin
+                                (make-vect 0.0 0.0)   ; new end of edge1
+                                (make-vect 1.0 1.0)   ; new end of edge2
+                         )
+       ))
+    (
+        (transform-painter flipped-painter ;rotate 180
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 1.0)
+                     (make-vect 1.0 0.0)
+        )
+    )
+  )
+)
+
+;below
+
+(define (below painter1 painter2)
+  (let ((split-point (make-vect 0.0 0.5)))
+    (let (
+            (paint-down  (transform-painter 
+                            painter1
+                            (make-vect 0.0 0.0)
+                            (make-vect 1.0 0.0)
+                            split-point
+                            )
+            )
+            (paint-up (transform-painter
+                            painter2
+                            split-point
+                            (make-vect 1.0 0.5)
+                            (make-vect 0.0 1.0)
+                        )
+            )
+          )
+      (lambda (frame)
+        (paint-down frame)
+        (paint-up frame)
+      )
+    )
+  )
+)

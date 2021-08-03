@@ -12,6 +12,7 @@ Which would be most appropriate for a system in which new operations must often 
 ;explicit dispatch:
 ;for every new data type we need to write new _PROCEDURE_ for the old operations.
 ;for every new operation, we need to add that operation to every data type.
+;we also need to create a new type-tag.
 
 (define (area shape)  ;_PROCEDURE_ to handle area-calculation
 	(cond ((eq? (type-tag shape) 'square) 
@@ -25,6 +26,27 @@ Which would be most appropriate for a system in which new operations must often 
 
 ;data-directed style:
 
-
+;as we setup a table and a generic operation procedure,
+;all we need to do for new features is add a new put instruction with the operation:
+(put 'square 'area (lambda (s) (* s s)))
+;and optionally add a new operate-function like below for easier usage:
+(define (new-feat shape)
+	(operate 'new-feat shape)
+)
 
 ;message-passing-style
+
+;after initial generic operation is created ,what we need to add for every new feature is
+;a new procedure (like below) if it's a new data-type
+(define (make-square side)
+	(lambda (message)
+		(cond ((eq? message ’area) (* side side))
+					((eq? message ’perimeter) (* 4 side))
+					(else (error "Unknown message"))
+		)
+	)
+)
+;add a message in the cond in all data-tag-procedures if it's new operation. 
+
+;advantage with message-passing-style is that we don't need to keep a lookup-table/database 
+;it's also good if your system will add alot of new data types rather than operations.

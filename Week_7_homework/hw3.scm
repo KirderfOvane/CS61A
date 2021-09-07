@@ -1,4 +1,4 @@
-3. We are going to use objects to represent decks of cards. You are given the list
+#| 3. We are going to use objects to represent decks of cards. You are given the list
 ordered-deck containing 52 cards in standard order:
 (define ordered-deck ’(AH 2H 3H ... QH KH AS 2S ... QC KC))
 You are also given a function to shuffle the elements of a list:
@@ -12,10 +12,10 @@ returning the top card of the deck, after removing that card from the deck; if t
 empty, it responds to deal by returning (). It responds to empty? by returning #t or #f,
 according to whether all cards have been dealt.
 Write a class definition for deck. When instantiated, a deck object should contain a shuffled
-deck of 52 cards.
+deck of 52 cards. |#
 
 
-(define ordered-deck '(AH 2H 3H 4H 5H 6H 7H 8H 9H 10H JH QH KH AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS QC KC))
+(define ordered-deck '(AH 2H 3H 4H 5H KC)) ;this should be 52 but for testing purpose i left it small.
 
 (define (shuffle deck)
     (if (null? deck)
@@ -26,9 +26,16 @@ deck of 52 cards.
 )
 
 (define-class (deck)
-    (instance-vars (cards (shuffle ordered-deck)) (dealed-card '()))
+    (instance-vars (cards '()) (dealed-card '()))
+    (initialize  (set! cards (shuffle ordered-deck)))
     (method (deal)
-        (begin ((set! dealed-card (car cards)) (set! cards (cdr cards)) )
+        (if (null? cards)
+            '()
+            (begin (set! dealed-card (car cards)) (set! cards (cdr cards)) dealed-card)
+        )
+    )
+    (method (empty?)
+        (null? cards)
     )
 )
 
@@ -36,3 +43,10 @@ deck of 52 cards.
 (define testdeck (instantiate deck))
 (ask testdeck 'cards )
 (ask testdeck 'deal )
+(ask testdeck 'empty? );> #f
+(ask testdeck 'deal )
+(ask testdeck 'deal )
+(ask testdeck 'deal )
+(ask testdeck 'deal )
+(ask testdeck 'deal )
+(ask testdeck 'empty? );> #t

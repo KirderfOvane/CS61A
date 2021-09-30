@@ -25,4 +25,3 @@
 (ask Lounge 'appear Coke)
 
 (define laba (instantiate person 'Lab-assistant 61A-Lab))
-

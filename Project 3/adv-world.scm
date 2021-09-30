@@ -48,8 +48,27 @@
 (define hacker (instantiate person 'hacker 61A-lab))
 (define nasty (instantiate thief 'nasty sproul-plaza))
 
-(define (sproul-hall-exit)
-   (error "You can check out any time you'd like, but you can never leave"))
+(define sproul-hall-exit-procedure
+    (lambda ()
+        (let
+          (
+            (call-count 3)
+          )
+            (lambda ()
+              
+                (if (> call-count 0)
+                  (begin 
+                    (set! call-count (- call-count 1))
+                    (error "You can check out any time you'd like, but you can never leave")
+                  )
+                  (se 'not 'obnoxious 'anymore )
+                )
+              
+            )
+        ) 
+    )   
+)
+(define sproul-hall-exit (sproul-hall-exit-procedure))
 
 (define (bh-office-exit)
   (print "What's your favorite programming language?")
@@ -57,8 +76,8 @@
     (if (eq? answer 'scheme)
 	(print "Good answer, but my favorite is Logo!")
 	(begin (newline) (bh-office-exit)))))
-    
 
+    
 (ask s-h 'add-entry-procedure
  (lambda () (print "Miles and miles of students are waiting in line...")))
 (ask s-h 'add-exit-procedure sproul-hall-exit)

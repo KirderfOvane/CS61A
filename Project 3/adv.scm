@@ -23,6 +23,7 @@
     (set! things (cons new-thing things))
     'appeared)
   (method (enter new-person)
+    (for-each (lambda (x) (ask x 'notice new-person) ) people )
     (if (memq new-person people)
 	(error "Person already in this place" (list name new-person)))
     (set! people (cons new-person people))
@@ -45,8 +46,10 @@
 	(error "Direction already assigned a neighbor" (list name direction)))
     (set! directions-and-neighbors
 	  (cons (cons direction neighbor) directions-and-neighbors))
-    'connected)
-
+    'connected )
+  (method (MAY-ENTER? person)
+     #t
+  )
   (method (add-entry-procedure proc)
     (set! entry-procs (cons proc entry-procs)))
   (method (add-exit-procedure proc)
@@ -65,7 +68,11 @@
    (possessions '())
    (saying ""))
   (initialize
-   (ask place 'enter self))
+   (if (ask place 'may-enter? self) 
+        (ask place 'enter self)
+        (error "Place is locked and you may not enter!")
+   )
+  )
   (method (type) 'person)
   (method (look-around)
     (map (lambda (obj) (ask obj 'name))
@@ -89,8 +96,7 @@
 		  (begin
 		   (ask pers 'lose thing)
 		   (have-fit pers))))
-	    (ask place 'people))
-	       
+	    (ask place 'people))  
 	   (ask thing 'change-possessor self)
 	   'taken)))
 
@@ -104,8 +110,12 @@
   (method (notice person) (ask self 'talk))
   (method (go direction)
     (let ((new-place (ask place 'look-in direction)))
+      (print new-place)
+      (lambda (test) (ask new-place test) 'type )
       (cond ((null? new-place)
 	     (error "Can't go" direction))
+       ((not (ask new-place 'may-enter? self ))
+       (error "Can't go, place is locked!"))
 	    (else
 	     (ask place 'exit self)
 	     (announce-move name place new-place)
@@ -115,7 +125,8 @@
 		(ask new-place 'appear p))
 	      possessions)
 	     (set! place new-place)
-	     (ask new-place 'enter self))))) )
+	     (ask new-place 'enter self)))))  
+        )
 
 (define thing
   (let ()

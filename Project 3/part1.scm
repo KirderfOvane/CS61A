@@ -399,10 +399,10 @@ it out. |#
 (can-go mylockedplace 'up s-h)
 (can-go s-h 'down mylockedplace)
 
-(define tlockman (instantiate person 'tlockman mylockedplace))
-(define lockman (instantiate person 'lockman s-h))
-(ask lockman 'go 'down )
-(ask mylockedplace 'unlock )
+;(define tlockman (instantiate person 'tlockman mylockedplace))
+;(define lockman (instantiate person 'lockman s-h))
+;(ask lockman 'go 'down )
+;(ask mylockedplace 'unlock )
 ;write (ask lockman 'go 'down ) 3 times and you get into the locked place.
 
 
@@ -412,56 +412,9 @@ they need to park their cars in garages.  A car is just a THING, but you'll
 have to invent a special kind of place called a GARAGE.  Garages have two
 methods (besides the ones all places have): PARK and UNPARK.  |#
 
-(define-class (garage name)
-    (parent (place name))
-    (class-vars (ticket 0))
-    (method (park car)
-        (cond 
-            ((not (eq? (ask car 'type ) 'thing )) (print "you did not provide a car to park"))
-            ((not (procedure? (ask car 'possessor ))) (print "there is no possessor in the car that can park it"))
-            (else 
-                (ask (ask car 'possessor ) 'lose car )
-            )
-        )
-         
-    )
-    (method (unpark)
-        (print "not yet implemented")
-    )
-)
-
-;testing:
-;positive:
-(define mazda (instantiate thing 'mazda ))
-(ask 61A-Lab 'appear mazda)
-(define commuter (instantiate person 'commuter 61A-Lab))
-(ask commuter 'take mazda )
-(ask (ask mazda 'possessor ) 'name )
-
-(define thegarage (instantiate garage 'thegarage ))
-(can-go thegarage 'up 61A-Lab)
-(can-go 61A-Lab 'down thegarage)
-
-(ask commuter 'go 'down )
-(ask thegarage 'park mazda)
-
-;negative/foolproof
-(define renault (instantiate thing 'renault ))
-(ask thegarage 'appear renault)
-(ask thegarage 'park renault) ;> no possessor
-(ask commuter 'take mazda )
-;how do i validate it's a car thing i wan't to park and not a Potsticker thing im trying to park?!
-
-
 #| You'll also
 need a special kind of THING called a TICKET; what's special about it is
 that it has a NUMBER as an instantiation variable. |#
-
-(define-class (ticket name number)
-    (parent (thing name))
-)
-
-
 
 #| The PARK method takes a car (a THING) as its argument.  First check to be sure
 that the car is actually in the garage.  (The person who possesses the car
@@ -500,6 +453,83 @@ that ticket number, so that people can't unpark the car twice.
 A real-life garage would have a limited capacity, and would charge money
 for parking, but to simplify the project you don't have to simulate those
 aspects of garages.  |#
+
+
+
+
+(define-class (ticket name )
+    (parent (thing name))
+    (class-vars (number 0))
+    (instance-vars (ident number))
+    (initialize (set! number (+ number 1)))
+)
+;testing
+;(define myticket (instantiate ticket 'myticket ))
+;(define myticket2 (instantiate ticket 'myticket2 ))
+;(ask myticket 'id)
+;(ask myticket2 'id)
+
+(define-class (garage name)
+    (parent (place name))
+    
+    (method (park vehicle)
+        (cond 
+            ((not (eq? (ask vehicle 'type ) 'thing )) (print "you did not provide a vehicle to park"))
+            ((not (procedure? (ask vehicle 'possessor ))) (print "there is no possessor in the vehicle that can park it"))
+            (else 
+                    (begin 
+                        
+                        (define temp-ticket (instantiate ticket 'ticket ))
+                        (ask self 'appear temp-ticket)
+                        (insert! (ask temp-ticket 'ident ) vehicle ticket-table)
+                        (if (eq? vehicle (lookup (ask temp-ticket 'ident ) ticket-table ))
+                            (begin 
+                                (ask (ask vehicle 'possessor ) 'take temp-ticket)
+                                (ask (ask vehicle 'possessor ) 'lose vehicle )
+                            )
+                            (print "Could not find the ticket in ticket-table")
+                        )
+                    ) 
+            )
+        )
+         
+    )
+    (method (unpark ticket)
+        (if (eq? (ask ticket 'name ) 'ticket )
+            (let
+                (
+                    (the-car (lookup (ask ticket 'ident ) ticket-table))
+                )
+                (if the-car
+                    (begin
+                        (ask (ask ticket 'possessor ) 'take the-car ) 
+                        (ask (ask ticket 'possessor ) 'lose ticket)
+                        (insert! (ask ticket 'ident ) #f ticket-table)
+                    )
+                )
+            )
+        )
+    )
+)
+
+;testing:
+
+(define mazda (instantiate thing 'mazda ))
+(ask 61A-Lab 'appear mazda)
+(define commuter (instantiate person 'commuter 61A-Lab))
+(ask commuter 'take mazda )
+(ask (ask mazda 'possessor ) 'name )
+
+(define thegarage (instantiate garage 'thegarage ))
+(can-go thegarage 'up 61A-Lab)
+(can-go 61A-Lab 'down thegarage)
+
+(ask commuter 'go 'down )
+(ask thegarage 'park mazda)
+
+(ask thegarage 'unpark (car (ask commuter 'possessions )) )
+(lookup 0 ticket-table)
+; no validation if thing is a car.
 
 
 

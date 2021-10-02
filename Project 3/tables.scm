@@ -19,7 +19,7 @@
 (define (make-table)
   (list '*table*))
 
-
+(define ticket-table (make-table))
 (define peopleinplaces (make-table))
 (insert! 'sproul-plaza '() peopleinplaces)
 (lookup 'sproul-plaza peopleinplaces)

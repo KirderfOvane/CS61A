@@ -211,16 +211,7 @@ Which of the following is correct?  Why? |#
 the object-oriented programming syntax described in the handout.  Translate
 it into the new notation. |#
 
-(define-class (thing name)
-     (instance-vars
-        (possessor 'no-one )
-        (type 'thing )
-     )
-     (method (change-possessor new-possessor)
-        (set! possessor new-possessor)
-     )
-     
-)
+
 ;testing
 (define mything (instantiate thing 'mything ))
 (ask 61A-Lab 'appear mything)

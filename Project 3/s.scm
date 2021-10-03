@@ -11,7 +11,9 @@ also faster to load. |#
 (load "tables.scm")
 ;(load "small-world.scm")
 (load "adv-world.scm")
-(load "part1.scm")
+(load "part1_person_A.scm")
+(load "part1_person_B.scm")
+(load "part2_person_A.scm")
 
 
 ; to run the project do (load "start-here.scm") in terminal in this folder.

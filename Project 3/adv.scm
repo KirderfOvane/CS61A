@@ -2,14 +2,34 @@
 ;; This file contains the definitions for the objects in the adventure
 ;; game and some utility procedures.
 
+(define-class (basic-object)
+    (class-vars (number 0))
+    (instance-vars (properties (list number)))
+    (initialize 
+      (set! number (+ number 1))
+      (insert! 'strength 50 properties)
+    )
+    (method (put key val) 
+        (insert! key val properties)
+    )
+    (method (get key)
+        (lookup key properties)
+    )
+    (default-method
+         (lookup message properties)
+    )
+)
+
 (define-class (place name)
+  (parent (basic-object))
   (instance-vars
    (directions-and-neighbors '())
    (things '())
    (people '())
    (entry-procs '())
    (exit-procs '()))
-  (method (type) 'place)
+  (method (type) 'place )
+  (method (place?) #t)
   (method (neighbors) (map cdr directions-and-neighbors))
   (method (exits) (map car directions-and-neighbors))
   (method (look-in direction)
@@ -21,25 +41,25 @@
     (if (memq new-thing things)
 	(error "Thing already in this place" (list name new-thing)))
     (set! things (cons new-thing things))
-    'appeared)
+    'appeared )
   (method (enter new-person)
     (for-each (lambda (x) (ask x 'notice new-person) ) people )
     (if (memq new-person people)
 	(error "Person already in this place" (list name new-person)))
     (set! people (cons new-person people))
     (for-each (lambda (proc) (proc)) entry-procs)
-    'appeared)
+    'appeared )
   (method (gone thing)
     (if (not (memq thing things))
 	(error "Disappearing thing not here" (list name thing)))
     (set! things (delete thing things)) 
-    'disappeared)
+    'disappeared )
   (method (exit person)
     (for-each (lambda (proc) (proc)) exit-procs)
     (if (not (memq person people))
 	(error "Disappearing person not here" (list name person)))
     (set! people (delete person people)) 
-    'disappeared)
+    'disappeared )
 
   (method (new-neighbor direction neighbor)
     (if (assoc direction directions-and-neighbors)
@@ -64,6 +84,7 @@
     'cleared) )
 
 (define-class (person name place)
+  (parent (basic-object))
   (instance-vars
    (possessions '())
    (saying ""))
@@ -73,16 +94,17 @@
         (error "Place is locked and you may not enter!")
    )
   )
-  (method (type) 'person)
+  (method (person?) #t)
+  (method (type) 'person )
   (method (look-around)
-    (map (lambda (obj) (ask obj 'name))
+    (map (lambda (obj) (ask obj 'name ))
 	 (filter (lambda (thing) (not (eq? thing self)))
-		 (append (ask place 'things) (ask place 'people)))))
+		 (append (ask place 'things ) (ask place 'people )))))
   (method (take thing)
     (cond ((not (thing? thing)) (error "Not a thing" thing))
-	  ((not (memq thing (ask place 'things)))
+	  ((not (memq thing (ask place 'things )))
 	   (error "Thing taken not at this place"
-		  (list (ask place 'name) thing)))
+		  (list (ask place 'name ) thing)))
 	  ((memq thing possessions) (error "You already have it!"))
 	  (else
 	   (announce-take name thing)
@@ -92,13 +114,33 @@
 	   (for-each
 	    (lambda (pers)
 	      (if (and (not (eq? pers self)) ; ignore myself
-		       (memq thing (ask pers 'possessions)))
+		       (memq thing (ask pers 'possessions )))
 		  (begin
 		   (ask pers 'lose thing)
 		   (have-fit pers))))
 	    (ask place 'people))  
 	   (ask thing 'change-possessor self)
-	   'taken)))
+	   'taken )))
+  (method (take-all)
+    (if (eq? (ask place 'things ) '())
+      (print "no things in this place!")
+      (begin 
+         ;debug
+          (print (ask place 'name ))
+          (map (lambda (thing) (print (ask thing 'name ))) (ask place 'things ))
+         ;debug end
+          (map 
+            (lambda (thing) 
+              (if (eq? (owner thing) 'no-one )
+                  (ask self 'take thing)
+                  (print "owned by someone, ignoring")
+              )
+            ) 
+            (ask place 'things )
+          )
+      )
+    )
+  )
 
   (method (lose thing)
     (set! possessions (delete thing possessions))
@@ -106,8 +148,11 @@
     'lost)
   (method (talk) (print saying))
   (method (set-talk string) (set! saying string))
-  (method (exits) (ask place 'exits))
-  (method (notice person) (ask self 'talk))
+  (method (exits) (ask place 'exits ))
+  (method (notice person) (ask self 'talk ))
+  (method (GO-DIRECTLY-TO new-place)
+    (set! place new-place)
+  )
   (method (go direction)
     (let ((new-place (ask place 'look-in direction)))
       (print new-place)
@@ -128,29 +173,42 @@
 	     (ask new-place 'enter self)))))  
         )
 
-(define thing
+#| (define thing
   (let ()
     (lambda (class-message)
       (cond
-       ((eq? class-message 'instantiate)
+       ((eq? class-message 'instantiate )
 	(lambda (name)
-	  (let ((self '()) (possessor 'no-one))
+	  (let ((self '()) (possessor 'no-one ))
 	    (define (dispatch message)
 	      (cond
-	       ((eq? message 'initialize)
+	       ((eq? message 'initialize )
 		(lambda (value-for-self)
 		  (set! self value-for-self)))
-	       ((eq? message 'send-usual-to-parent)
-		(error "Can't use USUAL without a parent." 'thing))
+	       ((eq? message 'send-usual-to-parent )
+		(error "Can't use USUAL without a parent." 'thing ))
 	       ((eq? message 'name) (lambda () name))
 	       ((eq? message 'possessor) (lambda () possessor))
-	       ((eq? message 'type) (lambda () 'thing))
-	       ((eq? message 'change-possessor)
+	       ((eq? message 'type) (lambda () 'thing ))
+	       ((eq? message 'change-possessor )
 		(lambda (new-possessor)
 		  (set! possessor new-possessor)))
-	       (else (no-method 'thing))))
+	       (else (no-method 'thing ))))
 	    dispatch)))
-       (else (error "Bad message to class" class-message))))))
+       (else (error "Bad message to class" class-message)))))) |#
+
+(define-class (thing name)
+  (parent (basic-object))
+  (instance-vars
+    (possessor 'no-one )
+    (type 'thing )
+  )
+  (method (thing?) #t)
+  (method (change-possessor new-possessor)
+      (set! possessor new-possessor)
+  )
+  
+)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,27 +217,32 @@
 (define *foods* '(pizza potstickers coffee))
 
 (define (edible? thing)
-  (member? (ask thing 'name) *foods*))
+  (member? (ask thing 'name ) *foods* ))
 
 (define-class (thief name initial-place)
   (parent (person name initial-place))
   (instance-vars
-   (behavior 'steal))
-  (method (type) 'thief)
-
+   (behavior 'steal )
+  )
+  (method (type) 'thief )
+  (method (tempmethod) ;IM HERE
+    (ask self 'place )
+  )
   (method (notice person)
-    (if (eq? behavior 'run)
-	(ask self 'go (pick-random (ask (usual 'place) 'exits)))
+    (if (eq? behavior 'run )
+    (ask self 'go (pick-random (ask (usual 'place ) 'exits )))
 	(let ((food-things
 	       (filter (lambda (thing)
 			 (and (edible? thing)
-			      (not (eq? (ask thing 'possessor) self))))
-		       (ask (usual 'place) 'things))))
+			      (not (eq? (ask thing 'possessor ) self))))
+		       (ask (usual 'place ) 'things ))))
 	  (if (not (null? food-things))
 	      (begin
 	       (ask self 'take (car food-things))
-	       (set! behavior 'run)
-	       (ask self 'notice person)) )))) )
+	       (set! behavior 'run )
+	       (ask self 'notice person)) )))) 
+)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utility procedures
@@ -239,8 +302,8 @@
 
 (define (person? obj)
   (and (procedure? obj)
-       (member? (ask obj 'type) '(person police thief))))
+       (member? (ask obj 'type ) '(person police thief))))
 
 (define (thing? obj)
   (and (procedure? obj)
-       (eq? (ask obj 'type) 'thing)))
+       (eq? (ask obj 'type ) 'thing )))

@@ -7,6 +7,11 @@ We will give things that are food two properties, an EDIBLE? property
 and a CALORIES property.  EDIBLE?  will have the value #T if the object is a
 food.  If a PERSON eats some food, the food's CALORIES are added to the
 person's STRENGTH. |#
+(define-class (food name)
+    (parent (thing name))
+    (instane-vars (calories 0))
+    (method (edible?) #t)
+)
 
 #| (Remember that the EDIBLE? property will automatically be false for objects
 other than food, because of the way properties were implemented in question B4.
@@ -25,7 +30,10 @@ relying on a built-in list of types of food. |#
 kinds of food.  For example, make a bagel class that inherits from FOOD.
 Give the bagel class a class-variable called NAME whose value is the word
 bagel.  (We'll need this later when we invent RESTAURANT objects.) |#
-
+(define (bagel name)
+    (parent (food name))
+    (class-vars (name 'bagel ))
+)
 #| Make an EAT method for people.  Your EAT method should look at your
 possessions and filter for all the ones that are edible.  It should then add
 the calorie value of the foods to your strength.  Then it should make the

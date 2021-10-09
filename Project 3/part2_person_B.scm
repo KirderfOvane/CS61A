@@ -7,9 +7,10 @@ We will give things that are food two properties, an EDIBLE? property
 and a CALORIES property.  EDIBLE?  will have the value #T if the object is a
 food.  If a PERSON eats some food, the food's CALORIES are added to the
 person's STRENGTH. |#
+(print "part2 person b ")
 (define-class (food name)
     (parent (thing name))
-    (instane-vars (calories 0))
+    (instance-vars (calories 20))
     (method (edible?) #t)
 )
 
@@ -30,10 +31,32 @@ relying on a built-in list of types of food. |#
 kinds of food.  For example, make a bagel class that inherits from FOOD.
 Give the bagel class a class-variable called NAME whose value is the word
 bagel.  (We'll need this later when we invent RESTAURANT objects.) |#
-(define (bagel name)
+(define-class (bagel name)
     (parent (food name))
     (class-vars (name 'bagel ))
 )
+
+(define bread (instantiate bagel 'bread ))
+
+; eat method testing:
+(ask bread 'name )
+(ask brian 'eat )
+
+(define pasta (instantiate food 'pasta ))
+(define unediblething (instantiate thing 'unediblething ))
+(define eatsalotperson (instantiate person 'eatsalotperson pimentel ))
+(ask pimentel 'appear bread )
+(ask pimentel 'appear pasta )
+(ask pimentel 'appear unediblething )
+(print "things in pimentel-place before eat")
+(print (map (lambda (t) (ask t 'name )) (ask pimentel 'things )))
+(ask eatsalotperson 'take pasta)
+(ask eatsalotperson 'take bread)
+(ask eatsalotperson 'take unediblething)
+(ask eatsalotperson 'eat )
+(print "things in pimentel-place after eat")
+(print (map (lambda (t) (ask t 'name )) (ask pimentel 'things )))
+
 #| Make an EAT method for people.  Your EAT method should look at your
 possessions and filter for all the ones that are edible.  It should then add
 the calorie value of the foods to your strength.  Then it should make the

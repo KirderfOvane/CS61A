@@ -14,6 +14,7 @@ also faster to load. |#
 (load "part1_person_A.scm")
 (load "part1_person_B.scm")
 (load "part2_person_A.scm")
+(load "part2_person_B.scm")
 
 
 ; to run the project do (load "start-here.scm") in terminal in this folder.

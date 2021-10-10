@@ -41,7 +41,6 @@ bagel.  (We'll need this later when we invent RESTAURANT objects.) |#
 ; eat method testing:
 (ask bread 'name )
 (ask brian 'eat )
-
 (define pasta (instantiate food 'pasta ))
 (define unediblething (instantiate thing 'unediblething ))
 (define eatsalotperson (instantiate person 'eatsalotperson pimentel ))
@@ -67,14 +66,53 @@ location). |#
 
 B7.  Your job is to define the police class.  A policeperson is to have the
 following behavior: |#
-(define-class (police name place)
-    (parent (person name place))
+(define-class (police name jail initial-place)
+    (parent (person name initial-place))
     (method (type) 'police )
-    (method (apprehend thief)
-        
+    (method (notice person) 
+        (begin 
+            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
+            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
+            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
+            (print "noticed new person: " )
+            (print (ask person 'name ))
+            (print "in place: ")
+            (print (whereis person))
+            (print "police checks to see if person is thief: ")
+            (if (eq? 'thief (ask person 'type ))
+                (begin
+                    (print "found a thief!")
+                    (print person)
+                    (ask self 'set-talk "Crime Does Not Pay")
+                    (ask self 'talk )
+                    (print "possessions to take away from thief: ")
+                    (print (map (lambda (poss) (ask poss 'name )) (ask person 'possessions )))
+                    (print (map (lambda (poss) (ask person 'lose poss )) (ask person 'possessions )))
+                    (print "send straight to jail!")
+                    (ask person 'go-directly-to jail)
+                    
+                    
+                )
+                (print "not a thief")
+            )
+        )
     )
+    ;(method (apprehend thief))
 )
 
+;testing of police class
+(define mypolice (instantiate police 'mypolice myjail pimentel ))
+(define non-thief (instantiate person 'non-thief pimentel))
+(define major-thief (instantiate thief 'major-thief 61a-lab))
+(define morefood (instantiate food 'morefood ))
+(ask 61a-lab 'appear morefood )
+(ask major-thief 'take morefood)
+(print "possessions of thief before caught: ")
+(print (map (lambda (poss) (ask poss 'name )) (ask major-thief 'possessions )))
+(ask major-thief 'go 'north )
+(print "possessions of thief after caught: ")
+(print (map (lambda (poss) (ask poss 'name )) (ask major-thief 'possessions )))
+(whereis major-thief)
 #| The police stays at one location.  When the police notices a new person
 entering the location, the police checks to see if that person is a thief.
 If the person is a thief the police says "Crime Does Not Pay," then takes

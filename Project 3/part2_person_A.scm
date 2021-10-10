@@ -43,8 +43,11 @@ to the thief being apprehended. |#
     (method (type) 'jail )
 )
 (define myjail (instantiate jail 'myjail ))
-(define thief (instantiate person 'thief soda))
-(ask thief 'go-directly-to myjail)
+(define testthief (instantiate person 'testthief soda))
+(define anotherthief (instantiate person 'anotherthief 61a-lab))
+(ask testthief 'go-directly-to myjail)
+(ask anotherthief 'go 'north )
+(ask anotherthief 'go-directly-to myjail )
 #| A6b.  Thieves sometimes try to leave their place in a randomly chosen
 direction.  This, it turns out, won't work if there are no exits from
 that place -- for example, the jail.  Modify the THIEF class so that

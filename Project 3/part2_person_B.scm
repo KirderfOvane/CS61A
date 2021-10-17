@@ -68,36 +68,25 @@ B7.  Your job is to define the police class.  A policeperson is to have the
 following behavior: |#
 (define-class (police name jail initial-place)
     (parent (person name initial-place))
+    (initialize (ask self 'put 'strength 250))
     (method (type) 'police )
     (method (notice person) 
         (begin 
-            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
-            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
-            (print "OOOOOOOOOOOOOOOOOOOOOOOOO")
-            (print "noticed new person: " )
-            (print (ask person 'name ))
-            (print "in place: ")
-            (print (whereis person))
-            (print "police checks to see if person is thief: ")
+
             (if (eq? 'thief (ask person 'type ))
                 (begin
-                    (print "found a thief!")
-                    (print person)
                     (ask self 'set-talk "Crime Does Not Pay")
                     (ask self 'talk )
                     (print "possessions to take away from thief: ")
                     (print (map (lambda (poss) (ask poss 'name )) (ask person 'possessions )))
                     (print (map (lambda (poss) (ask person 'lose poss )) (ask person 'possessions )))
-                    (print "send straight to jail!")
                     (ask person 'go-directly-to jail)
-                    
-                    
                 )
                 (print "not a thief")
             )
         )
     )
-    ;(method (apprehend thief))
+    
 )
 
 ;testing of police class
@@ -112,7 +101,7 @@ following behavior: |#
 (ask major-thief 'go 'north )
 (print "possessions of thief after caught: ")
 (print (map (lambda (poss) (ask poss 'name )) (ask major-thief 'possessions )))
-(whereis major-thief)
+(print (whereis major-thief))
 #| The police stays at one location.  When the police notices a new person
 entering the location, the police checks to see if that person is a thief.
 If the person is a thief the police says "Crime Does Not Pay," then takes
@@ -128,6 +117,13 @@ away from the police. :-) |#
 your food, you chasing the thief and the police catching the thief.  In case
 you haven't noticed, we've put a thief in Sproul Plaza. |#
 
+;Transcript of mypolice catching the thief in sproul plaza:
+(ask mypolice 'exits )
+(ask mypolice 'go 'south )
+(ask mypolice 'exits )
+(ask mypolice 'go 'west )
+(ask nasty 'go 'east )
+(whereis nasty) ;> myjail
 
 #| B8.  Now we want to reorganize TAKE so that it looks to see who previously
 possesses the desired object.  If its possessor is 'NO-ONE, go ahead and
@@ -141,6 +137,30 @@ take it.  This is a little more complicated than necessary right now, but
 we are planning ahead for a situation in which, for example, an object
 might want to make a clone of itself for a person to take.
 
+
 Note the flurry of message-passing going on here.  We send a message to the
 taker.  It sends a message to the thing, which sends messages to two people
 to find out their strengths. |#
+
+(define nt (instantiate thief 'nt 61a-lab))
+(define new-food (instantiate food 'new-food ))
+(ask 61a-lab 'appear new-food )
+(ask nt 'take new-food)
+(map (lambda (pos) (ask pos 'name ) ) (ask nt 'possessions )) ;> new-food
+
+(define another-thief (instantiate thief 'another-thief 61a-lab))
+ (ask another-thief 'take new-food) ;> error and execution stopped, run below manually
+
+;; Run below to test successful take/steal from person.
+(define powerup (instantiate food 'powerup ))
+(ask 61a-lab 'appear powerup )
+(ask another-thief 'take powerup )
+(ask another-thief 'eat )
+(ask another-thief 'strength )
+(ask another-thief 'take new-food) 
+
+
+
+#| Now make it so that when a POLICE person asks to BUY some food the
+restaurant doesn't charge him or her any money.  (This makes the game
+more realistic...) |#

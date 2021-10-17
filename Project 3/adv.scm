@@ -102,25 +102,49 @@
 		 (append (ask place 'things ) (ask place 'people )))))
   (method (take thing)
     (cond ((not (thing? thing)) (error "Not a thing" thing))
-	  ((not (memq thing (ask place 'things )))
-	   (error "Thing taken not at this place"
-		  (list (ask place 'name ) thing)))
-	  ((memq thing possessions) (error "You already have it!"))
-	  (else
-	   (announce-take name thing)
-	   (set! possessions (cons thing possessions))
-	       
-	   ;; If somebody already has this object...
-	   (for-each
-	    (lambda (pers)
-	      (if (and (not (eq? pers self)) ; ignore myself
-		       (memq thing (ask pers 'possessions )))
-		  (begin
-		   (ask pers 'lose thing)
-		   (have-fit pers))))
-	    (ask place 'people))  
-	   (ask thing 'change-possessor self)
-	   'taken )))
+      ((not (memq thing (ask place 'things )))
+      (error "Thing taken not at this place"
+        (list (ask place 'name ) thing)))
+      ((memq thing possessions) (error "You already have it!"))
+      (else
+        ;; Check If somebody already has this object...
+        (for-each
+          (lambda (pers)
+              (if (and (not (eq? pers self)) ; ignore myself
+                      (memq thing (ask pers 'possessions )) ; ask person if they possess this thing
+                  ) 
+                  (let
+                    (
+                      (response (ask thing 'may-take? self )) ; ask possessor if we may take thing.
+                    )
+                    (if response
+                      (begin
+                        (print "yes, we are stronger so we take it!") 
+                        (ask pers 'lose response)
+                        (have-fit pers)
+                      )
+                      (error "No can't take, it's possessed by someone stronger!")
+                    )
+                  )
+                  (begin
+                    (print (ask pers 'name ))
+                    (print "do not possess this thing")  
+                  )
+              )
+          )
+          (ask place 'people )
+        )  
+        
+        ;; Add thing to person possessions state.
+        (announce-take name thing)
+        (set! possessions (cons thing possessions))
+
+        ;; Set person as thing possessor state
+        (ask thing 'change-possessor self)
+        'taken 
+      )
+    )
+  )
   (method (take-all)
     (if (eq? (ask place 'things ) '())
       (print "no things in this place!")
@@ -162,32 +186,10 @@
   (method (exits) (ask place 'exits ))
   (method (notice person) (ask self 'talk ))
  (method (go-directly-to new-place)
-  (print "people:")
-  (print (map (lambda (pers) (ask pers 'name )) (ask place 'people )))
-  (print "before exit self")
-    
-    ;(ask place 'exit self)
-    (print "after exit self")
     (announce-move name place new-place) 
     (set! place new-place)
     (ask new-place 'enter self)
  )
-    ;(begin 
-    ;(print (ask self 'name ))
-    ;(print (ask (ask self 'place ) 'name ))
-     ; (print "going directly from: ")
-      ;(print (ask place 'name ))
-      ;######
-      ;(ask place 'exit self)
-      ;(set! place new-place)
-      
-      ;(ask new-place 'enter self)
-      ;#########
-      ;(print "to ")
-      ;(print (ask place 'name ))
-      
-    
-  
   (method (go direction)
     (let ((new-place (ask place 'look-in direction)))
       (print new-place)
@@ -208,30 +210,6 @@
 	     (ask new-place 'enter self)))))  
         )
 
-#| (define thing
-  (let ()
-    (lambda (class-message)
-      (cond
-       ((eq? class-message 'instantiate )
-	(lambda (name)
-	  (let ((self '()) (possessor 'no-one ))
-	    (define (dispatch message)
-	      (cond
-	       ((eq? message 'initialize )
-		(lambda (value-for-self)
-		  (set! self value-for-self)))
-	       ((eq? message 'send-usual-to-parent )
-		(error "Can't use USUAL without a parent." 'thing ))
-	       ((eq? message 'name) (lambda () name))
-	       ((eq? message 'possessor) (lambda () possessor))
-	       ((eq? message 'type) (lambda () 'thing ))
-	       ((eq? message 'change-possessor )
-		(lambda (new-possessor)
-		  (set! possessor new-possessor)))
-	       (else (no-method 'thing ))))
-	    dispatch)))
-       (else (error "Bad message to class" class-message)))))) |#
-
 (define-class (thing name)
   (parent (basic-object))
   (instance-vars
@@ -240,9 +218,28 @@
   )
   (method (thing?) #t)
   (method (change-possessor new-possessor)
-      (set! possessor new-possessor)
+      (begin 
+        (print "Changing possessor from: ")
+        (print possessor)
+        (set! possessor new-possessor)
+        (print "to: ")
+        (print possessor)
+        ;(print (ask (ask self 'possessor ) 'name ))
+      )
   )
-  
+  (method (may-take? receiver)
+    (begin 
+      (print "strength of possessor: ")
+      (print (ask (ask self 'possessor ) 'strength ))
+      (print "strength of receiver/taker")
+      (print (ask receiver 'strength ))
+      (if (< (ask (ask self 'possessor ) 'strength ) (ask receiver 'strength ))
+          self
+          #f
+      )
+      
+    )
+  )
 )
 
 
@@ -259,8 +256,8 @@
   (instance-vars
    (behavior 'steal )
   )
+  (initialize (ask self 'put 'strength 75))
   (method (type) 'thief )
-
   (method (notice person)
     (if (eq? behavior 'run )
     (ask self 'go (pick-random (ask (usual 'place ) 'exits )))

@@ -149,7 +149,7 @@ to find out their strengths. |#
 (map (lambda (pos) (ask pos 'name ) ) (ask nt 'possessions )) ;> new-food
 
 (define another-thief (instantiate thief 'another-thief 61a-lab))
- (ask another-thief 'take new-food) ;> error and execution stopped, run below manually
+ ;(ask another-thief 'take new-food) ;> error and execution stopped, run below manually or comment this out
 
 ;; Run below to test successful take/steal from person.
 (define powerup (instantiate food 'powerup ))
@@ -159,6 +159,18 @@ to find out their strengths. |#
 (ask another-thief 'strength )
 (ask another-thief 'take new-food) 
 
+
+;; test thief stealing behavior when person with food enters place.
+(define mythief (instantiate thief 'mythief kirin))
+(define about-to-be-robbed (instantiate person 'about-to-be-robbed soda))
+(define apple (instantiate food 'apple ))
+(ask soda 'appear apple )
+(ask about-to-be-robbed 'take apple )
+(ask about-to-be-robbed 'go 'north )
+
+(ask (ask apple 'possessor ) 'name );> mythief  , which means apple has successfully changed possessor.
+(print (map (lambda (p) (ask p 'name )) (ask mythief 'possessions ))) ;> (apple) , which means apple has successfully been added.
+(print (map (lambda (p) (ask p 'name )) (ask about-to-be-robbed 'possessions ))) ;> () , which means apple have successfully been removed .
 
 
 #| Now make it so that when a POLICE person asks to BUY some food the

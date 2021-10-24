@@ -42,13 +42,16 @@
 	(error "Thing already in this place" (list name new-thing)))
     (set! things (cons new-thing things))
     'appeared )
+
   (method (enter new-person)
-    (for-each (lambda (x) (ask x 'notice new-person) ) people )
+    (print "ENTER method starts:")
+    (for-each (lambda (pers) (begin (print "ENTER pers: ") (print (ask pers 'name )) (ask pers 'notice new-person) ) ) people )
     (if (memq new-person people)
-	(error "Person already in this place" (list name new-person)))
+	    (error "Person already in this place" (list name new-person)))
     (set! people (cons new-person people))
     (for-each (lambda (proc) (proc)) entry-procs)
     'appeared )
+
   (method (gone thing)
     (if (not (memq thing things))
 	(error "Disappearing thing not here" (list name thing)))
@@ -101,6 +104,9 @@
 	 (filter (lambda (thing) (not (eq? thing self)))
 		 (append (ask place 'things ) (ask place 'people )))))
   (method (take thing)
+    (print "######## TAKE TIME")
+    (print "place: ")
+    (print (ask (ask self 'place ) 'name ))
     (cond ((not (thing? thing)) (error "Not a thing" thing))
       ((not (memq thing (ask place 'things )))
       (error "Thing taken not at this place"
@@ -110,6 +116,10 @@
         ;; Check If somebody already has this object...
         (for-each
           (lambda (pers)
+              (print "person: ")
+              (print (ask pers 'name ))
+              (print "self: ")
+              (print (ask self 'name ))
               (if (and (not (eq? pers self)) ; ignore myself
                       (memq thing (ask pers 'possessions )) ; ask person if they possess this thing
                   ) 
@@ -190,24 +200,43 @@
     (set! place new-place)
     (ask new-place 'enter self)
  )
+ (method (change-possessions new-possessions)
+    (set! possessions (list new-possessions))
+  )
   (method (go direction)
     (let ((new-place (ask place 'look-in direction)))
       (print new-place)
       (lambda (test) (ask new-place test) 'type )
-      (cond ((null? new-place)
-	     (error "Can't go" direction))
-       ((not (ask new-place 'may-enter? self ))
-       (error "Can't go, place is locked!"))
-	    (else
-	     (ask place 'exit self)
-	     (announce-move name place new-place)
-	     (for-each
-	      (lambda (p)
-		(ask place 'gone p)
-		(ask new-place 'appear p))
-	      possessions)
-	     (set! place new-place)
-	     (ask new-place 'enter self)))))  
+      (cond ((null? new-place) (error "Can't go" direction))
+       ((not (ask new-place 'may-enter? self )) (error "Can't go, place is locked!"))
+        (else
+          (begin
+            (ask place 'exit self)
+            (announce-move name place new-place)
+            ;; change place of the possessions
+            (for-each
+              (lambda (p)
+              (print "possession")
+              (print (ask p 'name ))
+              (print "changes place")
+              (print "from place:")
+              (print (ask place 'name ))
+              (print "to: ")
+              (print (ask new-place 'name ))
+              (ask place 'gone p)
+              (ask new-place 'appear p))
+              possessions)
+              ;; change place of person
+              (print "changing place of person NOWW")
+            (set! place new-place)  
+            (print (ask (ask self 'place ) 'name ))
+            (ask new-place 'enter self)
+          )
+        )
+      )
+        
+      )
+  )  
         )
 
 (define-class (thing name)
@@ -251,26 +280,102 @@
 (define (edible? thing)
   (member? (ask thing 'name ) *foods* ))
 
-(define-class (thief name initial-place)
-  (parent (person name initial-place))
+(define-class (thief name place)
+  (parent (person name place))
   (instance-vars
    (behavior 'steal )
   )
   (initialize (ask self 'put 'strength 75))
   (method (type) 'thief )
+  
   (method (notice person)
-    (if (eq? behavior 'run )
-    (ask self 'go (pick-random (ask (usual 'place ) 'exits )))
-	(let ((food-things
-	       (filter (lambda (thing)
-			 (and (edible? thing)
-			      (not (eq? (ask thing 'possessor ) self))))
-		       (ask (usual 'place ) 'things ))))
-	 (if (not (null? food-things))
-	      (begin
-	       (ask self 'take (car food-things))
-	       (set! behavior 'run )
-	       (ask self 'notice person)) )))) 
+    (begin
+      (print "thief")
+      (print name)
+      (print "with behaviour state: ")
+      (print behavior)
+      (print "noticing a person: ")
+      (print (ask person 'name ))
+      (print "test of usual:")
+      (print (ask (usual 'place ) 'name ))
+      (print (ask (usual 'place ) 'things ))
+      (if (not (null? (ask (usual 'place ) 'things )))
+        (begin 
+          (print "the name of the first thing: ")
+          (print (ask (car (ask (usual 'place ) 'things )) 'name ))
+          (print "edible?")
+          (print (ask (car (ask (usual 'place ) 'things )) 'edible? ))
+        )
+      )
+      (if (eq? behavior 'run )
+        ;; if behaviour run:
+        (ask self 'go (pick-random (ask (usual 'place ) 'exits )))
+        ;; if behaviour steal:
+        (let (
+              (food-things (filter 
+                                  (lambda (thing) (and 
+                                                      (ask thing 'edible? )
+                                                      (not (eq? (ask thing 'possessor ) self))
+                                                    )
+                                  )
+                                  (ask (usual 'place ) 'things )
+                           )
+              )
+            )
+            (if (not (null? food-things))
+                (begin
+                  (print "found food things to steal!")
+                  (print (car food-things))
+                  ;(ask self 'take (car food-things))
+                  ;;;
+                   (let*
+                    (
+                      (previous-possessor (ask (car food-things) 'possessor ))
+                      (response (ask (car food-things) 'may-take? self )) ; ask possessor if we may take thing.
+                    )
+                    (print "WTFWTFWTFWTF")
+                    (print (ask previous-possessor 'name ))
+                    (print response)
+                    (if response
+                      (begin
+                        (print "yes, we are stronger so we take it!") 
+                        (ask previous-possessor 'lose (car food-things))
+                        (have-fit previous-possessor)
+
+                        ;;
+                          ;; Add thing to person possessions state.
+                          (announce-take name response)
+                          (print "POSPOSPOSPSOS")
+                          (print (ask self 'possessions ))
+                          (ask self 'change-possessions response)
+                          ;(print (get 'possessions ))
+                          (print "POSPOSPOSPSOS")
+                          ;(put 'possessions' val possessions (cons response possessions))
+
+                          ;; Set person as thing possessor state
+                          (ask response 'change-possessor self)
+                          'taken 
+                        ;;
+                      )
+                      (error "No can't take, it's possessed by someone stronger!")
+                    )
+                  )
+
+                  ;;;
+                  (print "ask previous  ")
+                  (set! behavior 'run )
+                  (ask self 'notice person)
+                )
+                (print "did not find any food to steal") 
+            )
+            (begin
+              (print "food things:")
+              (print food-things)
+            )
+        )
+      )
+    )
+  ) 
 )
 
 

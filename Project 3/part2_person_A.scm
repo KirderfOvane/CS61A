@@ -30,7 +30,6 @@ behavior makes it hard to catch a thief.
 
 Notice that a thief object delegates many messages to its person object.  |#
 
-
 #| A6a.  To help the police do their work, you will need to create a place called
 jail.  Jail has no exits.  Moreover, you will need to create a method for
 persons and thieves called GO-DIRECTLY-TO.  Go-directly-to does not require

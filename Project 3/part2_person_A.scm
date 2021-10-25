@@ -90,6 +90,7 @@ sells,  and the price of one item of this type:
 Notice that the argument to the restaurant is a CLASS, not a particular
 bagel (instance). |#
 
+
 #| Restaurants should have two methods.  The MENU method returns a list
 containing the name and price of the food that the restaurant sells.
 The SELL method takes two arguments, the person who wants to buy something

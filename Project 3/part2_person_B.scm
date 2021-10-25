@@ -173,6 +173,65 @@ to find out their strengths. |#
 (print (map (lambda (p) (ask p 'name )) (ask about-to-be-robbed 'possessions ))) ;> () , which means apple have successfully been removed .
 
 
+;part2_person_A restaurants:
+(define-class (restaurant name foodtype price)
+    (parent (place name))
+    (method (type) 'restaurant )
+    (method (menu)
+        (print (ask foodtype 'name ))
+        (print price)
+    )
+    (method (sell recipient foodname)
+        (if (eq? (ask foodtype 'name ) foodname)
+            (if (eq? (ask recipient 'type ) 'police )
+                (instantiate bagel 'bagel )
+                (if (ask recipient 'pay-money price)
+                    (instantiate bagel 'bagel )
+                    (begin 
+                        (print "recipient do not have sufficient funds for this payment")
+                        #f
+                    )
+                )
+            )
+            
+            (begin 
+                (print "This restaurant do not provide this type of food for purchase")
+                #f
+            )
+        )
+    )
+)
+;testing
+(define Noahs (instantiate restaurant 'Noahs bagel 0.50))
+(ask noahs 'menu )
+(ask Noahs 'sell mythief 'bagel )
+
+;testing buy
+(define Jens (instantiate person 'jens Noahs))
+(ask Jens 'buy 'bagel )
+(ask jens 'possessions ) ;> should return one object
+(ask jens 'get-money ) ;> should return 99.5
+(ask Jens 'buy 'bagel )
+(ask jens 'possessions ) ;> should return two objects
+
+
+;testing buy and insufficient funds
+(define Teddys (instantiate restaurant 'Teddys bagel 90.50))
+(define poorguy (instantiate person 'poorguy Teddys))
+(ask poorguy 'buy 'bagel )
+(ask poorguy 'get-money )
+(ask poorguy 'buy 'bagel )
+
+
+
+
 #| Now make it so that when a POLICE person asks to BUY some food the
 restaurant doesn't charge him or her any money.  (This makes the game
 more realistic...) |#
+
+
+;testing that police won't have to pay for food when buying
+(define newpolice (instantiate police 'newpolice myjail Teddys ))
+(ask newpolice 'buy 'bagel )
+(ask newpolice 'get-money );> should be 100
+(ask newpolice 'possessions );> should be one object

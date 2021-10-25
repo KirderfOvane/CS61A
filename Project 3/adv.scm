@@ -44,8 +44,7 @@
     'appeared )
 
   (method (enter new-person)
-    (print "ENTER method starts:")
-    (for-each (lambda (pers) (begin (print "ENTER pers: ") (print (ask pers 'name )) (ask pers 'notice new-person) ) ) people )
+    (for-each (lambda (pers) (ask pers 'notice new-person)) people )
     (if (memq new-person people)
 	    (error "Person already in this place" (list name new-person)))
     (set! people (cons new-person people))
@@ -90,12 +89,37 @@
   (parent (basic-object))
   (instance-vars
    (possessions '())
-   (saying ""))
+   (saying "")
+   (money 100)
+  )
+   
   (initialize
    (if (ask place 'may-enter? self) 
         (ask place 'enter self)
         (error "Place is locked and you may not enter!")
    )
+  )
+  (method (get-money) (ask self 'money ))
+  (method (pay-money num) (if (> (ask self 'money ) num)
+                              (begin 
+                                (set! money (- (ask self 'money ) num))
+                                #t
+                              )
+                              #f
+                          )
+  )
+  (method (buy food-name)
+    (let
+      (
+        (response (ask place 'sell self food-name ) )
+      )
+
+      (if (eq? response #f)
+          (print "can't buy this food")
+          (ask self 'change-possessions (append (list response) (ask self 'possessions ))) 
+      )
+      
+    )
   )
   (method (person?) #t)
   (method (type) 'person )
@@ -104,9 +128,8 @@
 	 (filter (lambda (thing) (not (eq? thing self)))
 		 (append (ask place 'things ) (ask place 'people )))))
   (method (take thing)
-    (print "######## TAKE TIME")
-    (print "place: ")
-    (print (ask (ask self 'place ) 'name ))
+
+    
     (cond ((not (thing? thing)) (error "Not a thing" thing))
       ((not (memq thing (ask place 'things )))
       (error "Thing taken not at this place"
@@ -116,10 +139,7 @@
         ;; Check If somebody already has this object...
         (for-each
           (lambda (pers)
-              (print "person: ")
-              (print (ask pers 'name ))
-              (print "self: ")
-              (print (ask self 'name ))
+             
               (if (and (not (eq? pers self)) ; ignore myself
                       (memq thing (ask pers 'possessions )) ; ask person if they possess this thing
                   ) 
@@ -129,7 +149,7 @@
                     )
                     (if response
                       (begin
-                        (print "yes, we are stronger so we take it!") 
+                        (print "We are stronger so we take it!") 
                         (ask pers 'lose response)
                         (have-fit pers)
                       )
@@ -159,10 +179,6 @@
     (if (eq? (ask place 'things ) '())
       (print "no things in this place!")
       (begin 
-         ;debug
-          (print (ask place 'name ))
-          (map (lambda (thing) (print (ask thing 'name ))) (ask place 'things ))
-         ;debug end
           (map 
             (lambda (thing) 
               (if (eq? (owner thing) 'no-one )
@@ -201,7 +217,7 @@
     (ask new-place 'enter self)
  )
  (method (change-possessions new-possessions)
-    (set! possessions (list new-possessions))
+    (set! possessions new-possessions)
   )
   (method (go direction)
     (let ((new-place (ask place 'look-in direction)))
@@ -216,20 +232,13 @@
             ;; change place of the possessions
             (for-each
               (lambda (p)
-              (print "possession")
-              (print (ask p 'name ))
-              (print "changes place")
-              (print "from place:")
-              (print (ask place 'name ))
-              (print "to: ")
-              (print (ask new-place 'name ))
-              (ask place 'gone p)
-              (ask new-place 'appear p))
-              possessions)
+                (ask place 'gone p)
+                (ask new-place 'appear p)
+              )
+              possessions
+            )
               ;; change place of person
-              (print "changing place of person NOWW")
             (set! place new-place)  
-            (print (ask (ask self 'place ) 'name ))
             (ask new-place 'enter self)
           )
         )
@@ -247,27 +256,13 @@
   )
   (method (thing?) #t)
   (method (change-possessor new-possessor)
-      (begin 
-        (print "Changing possessor from: ")
-        (print possessor)
         (set! possessor new-possessor)
-        (print "to: ")
-        (print possessor)
-        ;(print (ask (ask self 'possessor ) 'name ))
-      )
   )
   (method (may-take? receiver)
-    (begin 
-      (print "strength of possessor: ")
-      (print (ask (ask self 'possessor ) 'strength ))
-      (print "strength of receiver/taker")
-      (print (ask receiver 'strength ))
       (if (< (ask (ask self 'possessor ) 'strength ) (ask receiver 'strength ))
           self
           #f
       )
-      
-    )
   )
 )
 
@@ -289,24 +284,6 @@
   (method (type) 'thief )
   
   (method (notice person)
-    (begin
-      (print "thief")
-      (print name)
-      (print "with behaviour state: ")
-      (print behavior)
-      (print "noticing a person: ")
-      (print (ask person 'name ))
-      (print "test of usual:")
-      (print (ask (usual 'place ) 'name ))
-      (print (ask (usual 'place ) 'things ))
-      (if (not (null? (ask (usual 'place ) 'things )))
-        (begin 
-          (print "the name of the first thing: ")
-          (print (ask (car (ask (usual 'place ) 'things )) 'name ))
-          (print "edible?")
-          (print (ask (car (ask (usual 'place ) 'things )) 'edible? ))
-        )
-      )
       (if (eq? behavior 'run )
         ;; if behaviour run:
         (ask self 'go (pick-random (ask (usual 'place ) 'exits )))
@@ -324,57 +301,36 @@
             )
             (if (not (null? food-things))
                 (begin
-                  (print "found food things to steal!")
-                  (print (car food-things))
-                  ;(ask self 'take (car food-things))
-                  ;;;
                    (let*
                     (
                       (previous-possessor (ask (car food-things) 'possessor ))
                       (response (ask (car food-things) 'may-take? self )) ; ask possessor if we may take thing.
                     )
-                    (print "WTFWTFWTFWTF")
-                    (print (ask previous-possessor 'name ))
-                    (print response)
+           
                     (if response
                       (begin
-                        (print "yes, we are stronger so we take it!") 
                         (ask previous-possessor 'lose (car food-things))
                         (have-fit previous-possessor)
-
-                        ;;
+                        
                           ;; Add thing to person possessions state.
                           (announce-take name response)
-                          (print "POSPOSPOSPSOS")
-                          (print (ask self 'possessions ))
-                          (ask self 'change-possessions response)
-                          ;(print (get 'possessions ))
-                          (print "POSPOSPOSPSOS")
-                          ;(put 'possessions' val possessions (cons response possessions))
+                          (ask self 'change-possessions (append (list response) (ask self 'possessions )))
 
                           ;; Set person as thing possessor state
                           (ask response 'change-possessor self)
                           'taken 
-                        ;;
                       )
-                      (error "No can't take, it's possessed by someone stronger!")
+                      (print "No can't take, it's possessed by someone stronger!")
                     )
                   )
-
-                  ;;;
-                  (print "ask previous  ")
+                  
                   (set! behavior 'run )
                   (ask self 'notice person)
                 )
                 (print "did not find any food to steal") 
             )
-            (begin
-              (print "food things:")
-              (print food-things)
-            )
         )
       )
-    )
   ) 
 )
 

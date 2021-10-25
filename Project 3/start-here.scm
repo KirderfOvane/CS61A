@@ -17,8 +17,9 @@ also faster to load. |#
 (load "part2_person_B.scm")
 
 
-; to run the project do (load "start-here.scm") in terminal in this folder.
-
+; to run the project do (load "start-here.scm") in terminal in this folder. Type scheme when prompted by program.
+; Most parts are implemented and tested as close in the project instruction texts as possible in part1-part2-files.
+; Instead of transcripts ,tests is provided.
 
 #| This is a two-week project.  Each week, your group should
 hand in one paper (not one per person) including a listing of your modified

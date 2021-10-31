@@ -113,3 +113,34 @@
         (else (memq item (cdr x)))))
 
 ;(memq 'apple '(banana apple orange))
+
+; not working?
+(define (prime? a)
+    (or (= a 2) (and (> a 1) (not (= (remainder a 2) 0))))
+)
+
+; CS61A , to be used with prime?
+(define (range from to)
+  (if (> from to)
+      '()
+      (cons from (range (+ from 1) to))
+  )
+)
+
+; CS61A prime?, use with range
+(define (prime? n)
+  (null? (filter (lambda (x) (= (remainder n x) 0))
+  (range 2 (- n 1)))))
+
+
+; better
+(define (prime? n)
+  (define (F n i) ;"helper"
+    (cond ((< n (* i i)) #t)
+          ((zero? (remainder n i)) #f)
+          (else
+           (F n (+ i 1)))))
+ ;"primality test"
+ (cond ((< n 2) #f)
+     (else
+      (F n 2))))

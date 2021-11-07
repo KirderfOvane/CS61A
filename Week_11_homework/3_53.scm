@@ -13,3 +13,6 @@
 ; next call to stream s is 2 so 2+2 is 4 and next 4+4 is 8 and so on...
 
 (stream-ref s 8);> 256
+
+
+

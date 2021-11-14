@@ -114,12 +114,7 @@
 
 ;(memq 'apple '(banana apple orange))
 
-; not working?
-(define (prime? a)
-    (or (= a 2) (and (> a 1) (not (= (remainder a 2) 0))))
-)
-
-; CS61A , to be used with prime?
+; range
 (define (range from to)
   (if (> from to)
       '()
@@ -145,6 +140,21 @@
      (else
       (F n 2))))
 
+
+; Vectors
+
+(define (vector-map fn vec)
+	  (define (loop newvec n)
+			    (if (< n 0)
+					 newvec
+					 (begin 
+							(vector-set! newvec n (fn (vector-ref vec n)))
+				      (loop newvec (- n 1))
+					)
+		 )
+   )
+   (loop (make-vector (vector-length vec)) (- (vector-length vec) 1))
+)
 
 ; Streams
 (define (stream-for-each proc s)

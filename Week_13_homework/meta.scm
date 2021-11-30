@@ -317,6 +317,9 @@
 	(list 'list list)
 	(list 'append append)
 	(list 'equal? equal?)
+  (list 'time time)
+  (list '<= <=)
+  (list '< <)
 ;;      more primitives
         ))
 

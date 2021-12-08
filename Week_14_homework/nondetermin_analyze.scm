@@ -37,7 +37,7 @@
           (list 'smith smith))))
 
 
-
+;this was made wrong, it returns distinct values, but instead it should return false if not distinct and true if distinct.
 (define (distinct? li)
     (define (iter li new-li)
         (if (null? li)
@@ -57,6 +57,20 @@
      (iter li '())
 )
 
+;corrected
+(define (distinct? li)
+    (define (iter li new-li)
+        (if (null? li)
+            #t
+            (if (member? (car li) (cdr li))
+                #f       
+                (iter (cdr li) (append new-li (list (car li))))
+            )
+        )
+    )
+    (iter li '())
+)
+
 (define (member? x li)
     (if (null? li)
         #f
@@ -69,3 +83,5 @@
 
 (define (require p)
   (if (not p) (amb)))
+
+  ;run with (multiple-dwelling) --> ((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))

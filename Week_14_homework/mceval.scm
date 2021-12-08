@@ -28,7 +28,8 @@
 	((cond? exp) (mc-eval (cond->if exp) env))
 	((application? exp)
 	 (mc-apply (mc-eval (operator exp) env)
-		   (list-of-values (operands exp) env)))
+		   (list-of-values (operands exp) env))
+  )
 	(else
 	 (error "Unknown expression type -- EVAL" exp))))
 

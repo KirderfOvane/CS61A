@@ -215,7 +215,7 @@
 	     (let ((result (handle-infix (eval-helper #t)
 				       	 line-obj
 				       	 env)))
-	       (let ((token (ask line-obj 'next)))
+	       (let ((token (ask line-obj 'next )))
 	       	 (if (right-paren? token)
 		     result
 		     (error "Too much inside parens")))))
@@ -240,8 +240,8 @@
 
 (define (collect-n-args n line-obj env)
   (cond ((= n 0) '())
-	((and (< n 0) (not (ask line-obj 'empty?)))
-	 (let ((token (ask line-obj 'next)))
+	((and (< n 0) (not (ask line-obj 'empty? )))
+	 (let ((token (ask line-obj 'next )))
 	   (ask line-obj 'put-back token)
 	   (if (right-paren? token)
 	       '()

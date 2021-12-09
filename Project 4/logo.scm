@@ -3,8 +3,9 @@
 
 ;;; Problem A1   make-line-obj
 
-(define (make-line-obj text)   
-  (error "make-line-obj not written yet!")) 
+(define (make-line-obj text)
+  (define line-obj (instantiate line-object text))  
+) 
 
 
 ;;; Problem A2   logo-type
@@ -60,7 +61,7 @@
       (= a b)   
       (equal? a b)))   
 
-
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 ;;;  Stuff below here is needed for the interpreter to work but you  ;;;  
 ;;;  don't have to modify anything or understand how they work.      ;;;
@@ -122,7 +123,7 @@
                      (string->symbol (word quote-symbol
 					   (get-symbol (quoted char)))))))
 	      (else (get-symbol char)) )))
-
+
     (define (after-space)
       (let ((char (get-char)))
 	(if (eq? char #\space)

@@ -10,13 +10,54 @@
 
 ;;; Problem A2   logo-type
 
-(define (logo-type val)   
-  (error "logo-type not written yet!")) 
+(define (logo-type word-or-list)
+  (define (iter word-or-list output-li)
+          (map 
+            (lambda (li)
+              (if (pair? li)
+                  (map 
+                      (lambda (x) 
+                          (if (pair? x)
+                            (begin
+                              (display "[") 
+                              (map 
+                                   (lambda (el) 
+                                        (begin 
+                                          (display el)
+                                          (display " ")
+                                        )
+                                   ) 
+                                   x
+                              )
+                              (display "]")
+                              (display " ")
+                            )
+                            (begin 
+                              (display x)
+                              (display " ")
+                            )
+                          )  
+                      ) li
+                    )
+                    li
+              ) 
+            ) word-or-list
+          )      
+  )
+  (if (pair? word-or-list)  
+    (iter word-or-list '())
+    (display word-or-list)
+  )
+)
+;testing
+;(iter x '())
+;(logo-type  '([a [b c] d]))
+;(logo-type (word 'shit ))
 
 (define (logo-print val)   
   (logo-type val)  
   (newline) 
-  '=no-value=) 
+  '=no-value= ) 
 
 (define (logo-show val)   
   (logo-print (list val)))   
@@ -27,7 +68,7 @@
 
 (define (make env var val) 
   (error "make not written yet!") 
-  '=no-value=) 
+  '=no-value= ) 
 
 
 ;;; Here are the primitives RUN, IF, and IFELSE.  Problem B2 provides

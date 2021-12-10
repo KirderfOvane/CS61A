@@ -21,12 +21,24 @@
                             (begin
                               (display "[") 
                               (map 
-                                   (lambda (el) 
-                                        (begin 
+                                (let
+                                  (
+                                    (is-first? #t)
+                                  )
+                                   (lambda (el)
+                                      (if is-first?
+                                        (begin
                                           (display el)
-                                          (display " ")
+                                          (set! is-first? #f)
                                         )
+                                        (begin 
+                                            (display " ")
+                                            (display el)
+                                        )
+                                      )
+                                        
                                    ) 
+                                ) 
                                    x
                               )
                               (display "]")
@@ -63,6 +75,23 @@
   (logo-print (list val)))   
 
 
+; B2 1
+	(define (eval-line line-obj env)
+    (if (null? line-obj)
+        '=no-value= 
+        (let
+          (
+            (result (logo-eval line-obj env))
+          )
+          (if (null? result)
+              (eval-line (cdr line-obj) env)
+              result
+          )
+        )
+    )
+  )
+
+
 
 ;;; Problem 4   variables   (logo-meta.scm is also affected)
 
@@ -91,8 +120,13 @@
 ;;; Problem B2   logo-pred
 
 (define (logo-pred pred)   
-  pred)      ;; This isn't written yet but we fake it for now.
-
+  (lambda (x) (if (pred x)
+                  'TRUE
+                  'FALSE
+              ))
+)     
+;testing:
+;((logo-pred empty?) 1);> false
 
 ;;; Here is an example of a Scheme predicate that will be turned into  
 ;;; a Logo predicate by logo-pred:  

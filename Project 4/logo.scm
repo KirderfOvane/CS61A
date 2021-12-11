@@ -1,16 +1,70 @@
+(print "loading logo.scm")
 ;;; logo.scm         part of programming project #4
+ (define-class (line-object text)
+	(method (put-back token)
+		(set! text (append text (list token)))
+		text)
+	(method (remove)
+		(if (null? text)
+			(print "No more text to evaluate")
+			(begin
+			(set! text (cdr text))
+			text))
+	) 
+    (method (empty?)
+        (null? text)
+    )
+    ;NEXT:should return the next token waiting
+	;to be read in the line, and remove
+	;that token from the list.
+    (method (next)
+        (print text)
+        (if (null? text)
+            (print "there is nothing left to evaluate")
+            (begin
+			    (set! text (cdr text))
+			    (if (null? text)
+                    (print "there is nothing left to evaluate")
+                    (car text)
+                )
+            )
+        )
+    )
+) 
 
+;testing
+
+(define text '(sum ( product 2 3 ) 4))
+ (define line-obj (instantiate line-object text))  
+ (ask line-obj 'empty? )
+ (ask line-obj 'next )
+ (ask line-obj 'put-back '(4) ) 
+
+ 
+#| (define-class (line-object line)
+  (method (empty?)
+	  (null? line))
+  (method (next)
+	  (if (ask self 'empty?)
+	      (logo-error "Next called on empty line" self)
+	      (let ((token (car line)))
+		(set! line (cdr line))
+		token)))
+  (method (put-back token)
+	  (set! line (cons token line)))) |#
 
 ;;; Problem A1   make-line-obj
 
 (define (make-line-obj text)
-  (define line-obj (instantiate line-object text))  
+  ;(print "creating line-obj")
+  ;(define line-obj (instantiate line-object text))  
+  (instantiate line-object text)
 ) 
 
 
 ;;; Problem A2   logo-type
 
-(define (logo-type word-or-list)
+#| (define (logo-type word-or-list)
   (define (iter word-or-list output-li)
           (map 
             (lambda (li)
@@ -60,11 +114,30 @@
     (iter word-or-list '())
     (display word-or-list)
   )
-)
+) |#
 ;testing
 ;(iter x '())
 ;(logo-type  '([a [b c] d]))
 ;(logo-type (word 'shit ))
+(define (logo-type val)   
+  (cond ((null? val)
+	 '=no-value=)
+	((pair? val)                  ;; list
+	 (cond ((pair? (car val))     ;; sub-list
+		(display "[")
+		(logo-type (car val))
+		(display "]"))
+	       ((null? (car val))     ;; empty list
+		(display "[]"))
+	       (else                  ;; word
+		(display (car val)))) 
+	 (if (not (null? (cdr val)))
+	     (display " "))
+	 (logo-type (cdr val)))
+	(else                         ;; word
+	 (display val)
+	 '=no-value=)))
+
 
 (define (logo-print val)   
   (logo-type val)  
@@ -75,21 +148,7 @@
   (logo-print (list val)))   
 
 
-; B2 1
-	(define (eval-line line-obj env)
-    (if (null? line-obj)
-        '=no-value= 
-        (let
-          (
-            (result (logo-eval line-obj env))
-          )
-          (if (null? result)
-              (eval-line (cdr line-obj) env)
-              result
-          )
-        )
-    )
-  )
+
 
 
 
@@ -119,15 +178,44 @@
 
 ;;; Problem B2   logo-pred
 
-(define (logo-pred pred)   
+(define (logo-pred-1 pred)   
   (lambda (x) (if (pred x)
                   'TRUE
                   'FALSE
               ))
-)     
-;testing:
-;((logo-pred empty?) 1);> false
+) 
+(define (logo-pred-2 pred)   
+  (lambda (x y) (if (pred x y)
+                  'TRUE
+                  'FALSE
+              ))
+) 
 
+;not correct
+(define (logo-pred pred)  
+  (define (iter li arg-li)
+    (if (null? arg-li)
+      li
+      (iter (append li (list (car arg-li))) (cdr arg-li))
+    )
+  )
+  (lambda (x . y)
+              (if (null? y)
+                (if (pred x)
+                    'TRUE
+                    'FALSE
+                )
+                (iter (append (list pred) (list x)) y)
+              )
+  ) 
+) 
+
+;testing:
+;(eval ((logo-pred equal?) 1 2))
+;(eval ((logo-pred equal?) 2 2))
+;((logo-pred empty?) 1);> false
+;((logo-pred equal?) 1 2);> false
+;((logo-pred-2 equal?) 2 2)
 ;;; Here is an example of a Scheme predicate that will be turned into  
 ;;; a Logo predicate by logo-pred:  
 

@@ -18,9 +18,43 @@
 
 ;;; Problem B1    eval-line
 
-(define (eval-line line-obj env)
-  (error "eval-line not written yet!"))
-
+	#| (define (eval-line line-obj env)
+    (print "eval-line ran")
+    (print line-obj)
+    (if (null? line-obj)
+        '=no-value= 
+        (let
+          (
+            (result (logo-eval line-obj env))
+          )
+          (print "result:")
+          (print result)
+          (if (null? result)
+              (eval-line (cdr line-obj) env)
+              result
+          )
+        )
+    )
+  ) |#
+  ;correct
+  (define (eval-line line-obj env)
+    (print "eval-linetime")
+    (print (ask line-obj 'empty? ))
+    (define (loop)
+      (if (ask line-obj 'empty? )
+          '=no-value=
+          (let ((val (logo-eval line-obj env)))
+            (print "eval-line val")
+            (print val)
+              (if (eq? val '=no-value= )
+                  (loop)
+                  val
+              )
+          )
+      )
+    )
+    (loop)
+  )
 
 ;;; Problem 4    variables  (other procedures must be modified, too)
 ;;; data abstraction procedures
@@ -60,7 +94,7 @@
 
 
 
-
+
 ;;; SETTING UP THE ENVIRONMENT
 
 (define the-primitive-procedures '())
@@ -172,10 +206,21 @@
     (prompt "? ")
     (let ((line (logo-read)))
       (if (not (null? line))
-  	  (let ((result (eval-line (make-line-obj line)
-				   the-global-environment)))
-	    (if (not (eq? result '=no-value=))
-		(logo-print (list "You don't say what to do with" result))))))
+          (let 
+            (
+              (result (eval-line (make-line-obj line) the-global-environment))
+            )
+            (begin
+              (print "result:")
+              (print result)
+              (print (not (eq? result '=no-value= )))
+            (if (not (eq? result '=no-value= ))
+                (logo-print (list "You don't say what to do with" result))
+            )
+            )
+          )
+      )
+    )
     (helper))
   (logo-read)
   (helper))
@@ -189,7 +234,7 @@
 (define (apply-primitive-procedure p args)
   (apply (text p) args))
 
-
+
 ;;; Now for the code that's based on the book!!!
 
 

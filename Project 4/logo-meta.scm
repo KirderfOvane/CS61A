@@ -38,14 +38,14 @@
   ) |#
   ;correct
   (define (eval-line line-obj env)
-    (print "eval-linetime")
-    (print (ask line-obj 'empty? ))
+   ; (print "eval-linetime")
+   ; (print (ask line-obj 'empty? ))
     (define (loop)
       (if (ask line-obj 'empty? )
           '=no-value=
           (let ((val (logo-eval line-obj env)))
-            (print "eval-line val")
-            (print val)
+          ;  (print "eval-line val")
+          ;  (print val)
               (if (eq? val '=no-value= )
                   (loop)
                   val
@@ -110,17 +110,17 @@
 (add-prim 'last 1 last)
 (add-prim 'butlast 1 bl)
 (add-prim 'bl 1 bl)
-(add-prim 'word 2 word)
+(add-prim 'word -2 word)
 (add-prim 'sentence 2 se)
-(add-prim 'se 2 se)
-(add-prim 'list 2 list)
+(add-prim 'se -2 se)
+(add-prim 'list -2 list)
 (add-prim 'fput 2 cons)
 
-(add-prim 'sum 2 (make-logo-arith +))
+(add-prim 'sum -2 (make-logo-arith +))
 (add-prim 'difference 2 (make-logo-arith -))
 (add-prim '=unary-minus= 1 (make-logo-arith -))
 (add-prim '- 1 (make-logo-arith -))
-(add-prim 'product 2 (make-logo-arith *))
+(add-prim 'product -2 (make-logo-arith *))
 (add-prim 'quotient 2 (make-logo-arith /))
 (add-prim 'remainder 2 (make-logo-arith remainder))
 
@@ -211,12 +211,12 @@
               (result (eval-line (make-line-obj line) the-global-environment))
             )
             (begin
-              (print "result:")
-              (print result)
-              (print (not (eq? result '=no-value= )))
-            (if (not (eq? result '=no-value= ))
-                (logo-print (list "You don't say what to do with" result))
-            )
+             ; (print "result:")
+             ; (print result)
+              ;(print (not (eq? result '=no-value= )))
+              (if (not (eq? result '=no-value= ))
+                  (logo-print (list "You don't say what to do with" result))
+              )
             )
           )
       )
@@ -244,38 +244,52 @@
 ;; logo-eval calls eval-prefix for the part in parentheses, and then
 ;; handle-infix to check for and process the infix arithmetic.
 ;; Eval-prefix is comparable to Scheme's eval.
-
-(define (logo-eval line-obj env)
+ (define (logo-eval line-obj env)
   (handle-infix (eval-prefix line-obj env) line-obj env))
 
 (define (eval-prefix line-obj env)
   (define (eval-helper paren-flag)
-    (let ((token (ask line-obj 'next)))
+    (let ((token (ask line-obj 'next )))
       (cond ((self-evaluating? token) token)
-            ((variable? token)
-	     (lookup-variable-value (variable-name token) env))
+            ((variable? token) (lookup-variable-value (variable-name token) env))
             ((quoted? token) (text-of-quotation token))
             ((definition? token) (eval-definition line-obj))
-	    ((left-paren? token)
-	     (let ((result (handle-infix (eval-helper #t)
-				       	 line-obj
-				       	 env)))
-	       (let ((token (ask line-obj 'next )))
-	       	 (if (right-paren? token)
-		     result
-		     (error "Too much inside parens")))))
-	    ((right-paren? token)
-	     (error "Unexpected ')'"))
+            ((left-paren? token)
+              (print "found a left paren!")
+              (print (ask line-obj 'text ))
+              ;(handle-infix (eval-helper #t) line-obj env)
+              (let ((result (handle-infix (eval-helper #t) line-obj env)))
+                (let ((token (ask line-obj 'next )))
+                     (if (right-paren? token)
+                         (begin (print result) (set! paren-flag #f) result)
+                         (begin (print token) (error "Too much inside parens"))
+                     )
+                )
+              )
+            )
+            ((right-paren? token) 
+              (if (eq? paren-flag #t) 
+                  (begin (print "found right paren") '());(set! paren-flag #f)
+                  (begin (print token) (error "Unexpected ')'")))
+            )
             (else
-	     (let ((proc (lookup-procedure token)))
-	       (if (not proc) (error "I don't know how  to " token))
-	       (logo-apply proc
-			   (collect-n-args (arg-count proc)
-					   line-obj
-					   env) ))) )))
+              (let ((proc (lookup-procedure token)))
+                (if (not proc) (error "I don't know how  to " token))
+                  (if (eq? paren-flag #t) 
+                    (logo-apply proc (collect-n-args (ask line-obj 'text ) line-obj env))
+                    (logo-apply proc (collect-n-args (arg-count proc) line-obj env))
+                  )
+              )
+            )
+      )
+    )
+  )
   (eval-helper #f))
 
 (define (logo-apply procedure arguments)
+  (print "logo-apply:")
+  (print "procedure:") (print procedure)
+  (print "arguments:") (print arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
@@ -283,21 +297,86 @@
         (else
          (error "Unknown procedure type -- LOGO-APPLY " procedure))))
 
+#| Your job is to modify the invocation of collect-n-args to handle both of
+the special cases described here.   |#
+
+#| If the arg-count in the procedure is a list, call collect-n-args with its car as the number, 
+and cons the current environment onto the front of the resulting argument list.  |# 
+
+#| If the arg-count is negative, you should use its absolute value as the number unless this
+invocation is inside parentheses.  (There is a local variable paren-flag
+that will be #T in this situation, #F otherwise.) |#
+
+#|   (let ((token (ask line-obj 'next )))
+            (ask line-obj 'put-back token)
+            (if (right-paren? token)
+                '()
+                      (let ((next (logo-eval line-obj env)))
+                  (cons next
+                        (collect-n-args (- n 1) line-obj env)) )
+            )
+  ) |#
+  (define (count-the-list li counter)
+    (if (null? li)
+      counter
+      (if (right-paren? (car li))
+        counter
+        (count-the-list (cdr li) (+ counter 1)) 
+      )
+    )
+  )
+  (define (create-the-list li new-li)
+    (if (null? li)
+      new-li
+      (if (right-paren? (car li))
+        new-li
+        (create-the-list (cdr li) (append new-li (list (car li)))) 
+      )
+    )
+  )
+  ;convert from this structure: (word 2 3) to this structure: (word 2 3)
+  
+(define (collect-variable-n-args n line-obj env)
+  (print "var args:")
+  (print "n:") (print n)
+  (print "line obj var:") (print (ask line-obj 'text ))
+  (print "number of args:") (print (count-the-list n 0))
+  (print "new arg list:") (print (create-the-list n '() ))
+  ;(create-the-list n '())
+  (collect-positive-integer-args (count-the-list n 0) line-obj env)
+  ;(error "end")
+)
+(define (collect-default-negative-args n line-obj env)
+  (print "default negative arg eval")
+  (if (eq? (abs n) (count-the-list (ask line-obj 'text ) 0))
+    (collect-positive-integer-args (abs n) line-obj env)
+    (collect-variable-n-args (ask line-obj 'text ) line-obj env)
+  )
+)
+(define (collect-positive-integer-args n line-obj env)
+  (print "normal integer argument evaluation")
+  (print "line obj:") (print (ask line-obj 'text )) (print "n in pos:") (print n) 
+  
+      (let ((next (logo-eval line-obj env)))
+                    (cons next (collect-n-args (- n 1) line-obj env)) 
+      )
+  
+  
+)
+
 (define (collect-n-args n line-obj env)
-  (cond ((= n 0) '())
-	((and (< n 0) (not (ask line-obj 'empty? )))
-	 (let ((token (ask line-obj 'next )))
-	   (ask line-obj 'put-back token)
-	   (if (right-paren? token)
-	       '()
-      	       (let ((next (logo-eval line-obj env)))
-        	 (cons next
-	      	       (collect-n-args (- n 1) line-obj env)) ))))
-	(else      
-      	 (let ((next (logo-eval line-obj env)))
-           (cons next
-	      	 (collect-n-args (- n 1) line-obj env)) ))))
-
+  (print "n:")
+  (print n)
+  (cond ((list? n) (collect-variable-n-args n line-obj env))
+        ((= n 0) '())
+        ((and (< n 0) (not (ask line-obj 'empty? ))) (collect-default-negative-args n line-obj env))
+        (else      
+          (collect-positive-integer-args n line-obj env)
+        )
+  )
+)
+
+
 ;;; Section 4.1.2 -- Representing expressions
 
 ;;; numbers

@@ -1,155 +1,86 @@
-(print "loading logo.scm")
+
 ;;; logo.scm         part of programming project #4
- (define-class (line-object text)
-	(method (put-back token)
-		(set! text (append text (list token)))
-		text)
+(define-class (line-object text)
 	(method (remove)
 		(if (null? text)
-			(print "No more text to evaluate")
+			(print "line-obj says: No more text to evaluate")
 			(begin
 			(set! text (cdr text))
 			text))
 	) 
-    (method (empty?)
-        (null? text)
-    )
-    ;NEXT:should return the next token waiting
-	;to be read in the line, and remove
-	;that token from the list.
-    (method (next)
-        (print text)
-        (if (null? text)
-            (print "there is nothing left to evaluate")
-            (begin
-			    (set! text (cdr text))
-			    (if (null? text)
-                    (print "there is nothing left to evaluate")
-                    (car text)
-                )
-            )
-        )
-    )
-) 
-
-;testing
-
-(define text '(sum ( product 2 3 ) 4))
- (define line-obj (instantiate line-object text))  
- (ask line-obj 'empty? )
- (ask line-obj 'next )
- (ask line-obj 'put-back '(4) ) 
-
- 
-#| (define-class (line-object line)
-  (method (empty?)
-	  (null? line))
+  (method (empty?) (null? text))
+  ;NEXT:should return the next token waiting
+  ;to be read in the line, and remove
+  ;that token from the list.
   (method (next)
-	  (if (ask self 'empty?)
-	      (logo-error "Next called on empty line" self)
-	      (let ((token (car line)))
-		(set! line (cdr line))
-		token)))
+      ;(print text)
+      (if (null? text)
+          (print "line-obj says: there is nothing left to evaluate")
+          (let
+              (
+                (token (car text))
+              )
+              (set! text (cdr text))
+              token
+          )
+      )
+  )
   (method (put-back token)
-	  (set! line (cons token line)))) |#
+    (set! text (append text (list token)))
+    text)
+)  
+#|  (define-class (line-object line)
+    (method (empty?) (null? line))
+    (method (next)
+      (if (ask self 'empty? )
+          (logo-error "Next called on empty line" self)
+          (let ((token (car line)))
+               (set! line (cdr line))
+                token
+          )
+      )
+    )
+    (method (put-back token)
+      (set! line (cons token line)))
+  )  |#
 
 ;;; Problem A1   make-line-obj
 
-(define (make-line-obj text)
-  ;(print "creating line-obj")
-  ;(define line-obj (instantiate line-object text))  
+(define (make-line-obj text) 
   (instantiate line-object text)
 ) 
 
 
 ;;; Problem A2   logo-type
 
-#| (define (logo-type word-or-list)
-  (define (iter word-or-list output-li)
-          (map 
-            (lambda (li)
-              (if (pair? li)
-                  (map 
-                      (lambda (x) 
-                          (if (pair? x)
-                            (begin
-                              (display "[") 
-                              (map 
-                                (let
-                                  (
-                                    (is-first? #t)
-                                  )
-                                   (lambda (el)
-                                      (if is-first?
-                                        (begin
-                                          (display el)
-                                          (set! is-first? #f)
-                                        )
-                                        (begin 
-                                            (display " ")
-                                            (display el)
-                                        )
-                                      )
-                                        
-                                   ) 
-                                ) 
-                                   x
-                              )
-                              (display "]")
-                              (display " ")
-                            )
-                            (begin 
-                              (display x)
-                              (display " ")
-                            )
-                          )  
-                      ) li
-                    )
-                    li
-              ) 
-            ) word-or-list
-          )      
-  )
-  (if (pair? word-or-list)  
-    (iter word-or-list '())
-    (display word-or-list)
-  )
-) |#
-;testing
-;(iter x '())
-;(logo-type  '([a [b c] d]))
-;(logo-type (word 'shit ))
 (define (logo-type val)   
-  (cond ((null? val)
-	 '=no-value=)
-	((pair? val)                  ;; list
-	 (cond ((pair? (car val))     ;; sub-list
-		(display "[")
-		(logo-type (car val))
-		(display "]"))
-	       ((null? (car val))     ;; empty list
-		(display "[]"))
-	       (else                  ;; word
-		(display (car val)))) 
-	 (if (not (null? (cdr val)))
-	     (display " "))
-	 (logo-type (cdr val)))
-	(else                         ;; word
-	 (display val)
-	 '=no-value=)))
+  (cond 
+    ((null? val) '=no-value= )
+    ((pair? val)                  ;; list
+      (cond ((pair? (car val)) (display "[") (logo-type (car val)) (display "]")) ;; sub-list
+            ((null? (car val)) (display "[]"))  ;; empty list
+            (else                  
+              (display (car val))) ;; word
+      ) 
+    (if (not (null? (cdr val))) ; if it's not the last value
+        (display " ")
+    )
+    (logo-type (cdr val)))  ;after any of above cond, move on to next val
+    (else                     ;; word
+      (display val)
+      '=no-value= 
+    )
+  )
+)
 
 
-(define (logo-print val)   
+(define (logo-print val)
   (logo-type val)  
   (newline) 
   '=no-value= ) 
 
 (define (logo-show val)   
   (logo-print (list val)))   
-
-
-
-
 
 
 ;;; Problem 4   variables   (logo-meta.scm is also affected)
@@ -336,8 +267,9 @@
     (let ((exp (logo-read)))   
       (if (eof-object? exp)   
           '() 
-          (begin (eval-line (make-line-obj exp)
-			    the-global-environment) 
-		 (loader))))) 
+          (begin 
+            (eval-line (make-line-obj exp) the-global-environment) 
+		        (loader)
+          )))) 
   (with-input-from-file (symbol->string fn) loader)
-  '=no-value=) 
+  '=no-value= ) 

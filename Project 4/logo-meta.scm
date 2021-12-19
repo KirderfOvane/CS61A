@@ -60,10 +60,18 @@
 ;;; data abstraction procedures
 
 (define (variable? exp)
-  #f)            ;; not written yet but we fake it for now
+ ; (print "variable? exp:")
+  ;(print exp)
+  ;(print (first exp))
+  (if (eq? (first exp) :)
+    (begin (print "found procedure definition!") #t)
+    (begin (print "this is _NOT_ a procedure definition") #f)
+  )
+)         
 
 (define (variable-name exp)
-  (error "variable-name not written yet!"))
+  (bf exp)
+)
 
 
 ;;; Problem A5   handle-infix
@@ -82,6 +90,27 @@
 
 
 ;;; Problem B5    eval-definition
+
+(define (make? line-obj)
+  (if (eq? line-obj 'make )
+    #t
+    #f
+  )
+)
+
+(define make-var-name (lambda (x) (bf (car x))))
+(define make-value cadr)
+
+(define (eval-make line-obj env)
+  ;(print (ask line-obj 'text ))
+  ;(print "var name:") (print (make-var-name (ask line-obj 'text )))
+  ;(print "value:") (print (make-value (ask line-obj 'text )))
+  ;(print "checking if var exists:") (print (lookup-variable-value (make-var-name (ask line-obj 'text )) env))
+  (if (lookup-variable-value (make-var-name (ask line-obj 'text )) env)
+      (begin (set-variable-value! (make-var-name (ask line-obj 'text )) (make-value (ask line-obj 'text )) env) '=no-value= )
+      (begin (define-variable! (make-var-name (ask line-obj 'text )) (make-value (ask line-obj 'text )) env) '=no-value= )
+  )
+)
 
 (define (eval-definition line-obj)
   (error "eval-definition not written yet!"))
@@ -254,6 +283,7 @@
             ((variable? token) (lookup-variable-value (variable-name token) env))
             ((quoted? token) (text-of-quotation token))
             ((definition? token) (eval-definition line-obj))
+            ((make? token) (eval-make line-obj env))
             ((left-paren? token)
               (print "found a left paren!")
               (print (ask line-obj 'text ))
@@ -462,7 +492,7 @@ that will be #T in this situation, #F otherwise.) |#
              (car vals))
             (else (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
-        (error "Unbound variable " var)
+        #f;(error "Unbound variable " var)
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))

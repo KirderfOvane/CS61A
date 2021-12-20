@@ -64,8 +64,14 @@
   ;(print exp)
   ;(print (first exp))
   (if (eq? (first exp) :)
-    (begin (print "found procedure definition!") #t)
-    (begin (print "this is _NOT_ a procedure definition") #f)
+    (begin 
+     ; (print "found procedure definition!") 
+      #t
+    )
+    (begin 
+     ; (print "this is _NOT_ a procedure definition") 
+      #f
+    )
   )
 )         
 
@@ -83,10 +89,41 @@
 		      (/ . quotient)
 		      (= . equalp)
 		      (< . lessp)
-		      (> . greaterp)))))
+		      (> . greaterp))
+        )
+  ))
+
 
 (define (handle-infix value line-obj env)
-  value)   ;; This doesn't give an error message, so other stuff works.
+ ; (print "value:") (print value)
+  ;(print "line-obj:") (print (ask line-obj 'text ))
+  (if (null? (ask line-obj 'text ))
+      (begin 
+      ;  (print "line obj is null") 
+        value
+      )
+      (begin 
+        ;(print "checking for infix")
+        (if (member? (car (ask line-obj 'text )) '(+ - * / = < >))
+          (let
+            (
+              (next (ask line-obj 'next ))
+            )
+            (begin
+              ;(print "found an infix operator!")
+              (ask line-obj 'put-in-front value)
+              (ask line-obj 'put-in-front (de-infix next))
+             ; (print (ask line-obj 'text ))
+              (logo-eval line-obj env)
+            )
+          )
+          value
+        )
+      )
+  )
+  
+  ;value
+)   ;; This doesn't give an error message, so other stuff works.
 
 
 ;;; Problem B5    eval-definition
@@ -112,8 +149,52 @@
   )
 )
 
+#| Example of how a logo definition should look like:
+
+to pr2nd :thing
+print first bf :thing
+end 
+
+
+ui on writing:
+? to pr2nd :thing
+> print first bf :thing
+> end
+pr2nd defined
+? 
+
+|#
+
+
 (define (eval-definition line-obj)
-  (error "eval-definition not written yet!"))
+    (define (eval-def-loop body)
+          (prompt "-> ")
+          (let
+            (
+              (line-reading (logo-read))
+            )
+            (if (member? 'end line-reading)
+                body
+                (eval-def-loop (append line-reading body))
+            )
+          )
+    )
+    (let
+      (
+        (name (ask line-obj 'next ))
+        (arg-count (length (ask line-obj 'text )))
+        (formals (ask line-obj 'text ))
+        (body '())
+      )
+      (set! body (eval-def-loop body))
+      (print "the-procedures:")
+      (print the-procedures)
+      (print "the-primitive-procedures:") (print the-primitive-procedures)
+      (set! the-procedures (cons (list name 'compound arg-count (cons formals body)) the-procedures))
+      (print "AFTER") (print the-procedures) ;TODO: compound should be formatted as lambda proc or as is now?
+      ;(print (list name 'compound arg-count (cons formals body)))
+    )
+  )
 
 
 ;;; Problem 6    eval-sequence
@@ -278,6 +359,7 @@
 
 (define (eval-prefix line-obj env)
   (define (eval-helper paren-flag)
+    ;(print "eval-helper:")
     (let ((token (ask line-obj 'next )))
       (cond ((self-evaluating? token) token)
             ((variable? token) (lookup-variable-value (variable-name token) env))
@@ -285,10 +367,11 @@
             ((definition? token) (eval-definition line-obj))
             ((make? token) (eval-make line-obj env))
             ((left-paren? token)
-              (print "found a left paren!")
-              (print (ask line-obj 'text ))
+             ; (print "found a left paren!")
+             ; (print (ask line-obj 'text ))
               ;(handle-infix (eval-helper #t) line-obj env)
               (let ((result (handle-infix (eval-helper #t) line-obj env)))
+               ; (print "inside eval-helper")
                 (let ((token (ask line-obj 'next )))
                      (if (right-paren? token)
                          (begin (print result) (set! paren-flag #f) result)
@@ -317,9 +400,9 @@
   (eval-helper #f))
 
 (define (logo-apply procedure arguments)
-  (print "logo-apply:")
-  (print "procedure:") (print procedure)
-  (print "arguments:") (print arguments)
+ ; (print "logo-apply:")
+ ; (print "procedure:") (print procedure)
+ ; (print "arguments:") (print arguments)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
@@ -327,25 +410,7 @@
         (else
          (error "Unknown procedure type -- LOGO-APPLY " procedure))))
 
-#| Your job is to modify the invocation of collect-n-args to handle both of
-the special cases described here.   |#
 
-#| If the arg-count in the procedure is a list, call collect-n-args with its car as the number, 
-and cons the current environment onto the front of the resulting argument list.  |# 
-
-#| If the arg-count is negative, you should use its absolute value as the number unless this
-invocation is inside parentheses.  (There is a local variable paren-flag
-that will be #T in this situation, #F otherwise.) |#
-
-#|   (let ((token (ask line-obj 'next )))
-            (ask line-obj 'put-back token)
-            (if (right-paren? token)
-                '()
-                      (let ((next (logo-eval line-obj env)))
-                  (cons next
-                        (collect-n-args (- n 1) line-obj env)) )
-            )
-  ) |#
   (define (count-the-list li counter)
     (if (null? li)
       counter
@@ -364,28 +429,28 @@ that will be #T in this situation, #F otherwise.) |#
       )
     )
   )
-  ;convert from this structure: (word 2 3) to this structure: (word 2 3)
+  
   
 (define (collect-variable-n-args n line-obj env)
-  (print "var args:")
-  (print "n:") (print n)
-  (print "line obj var:") (print (ask line-obj 'text ))
-  (print "number of args:") (print (count-the-list n 0))
-  (print "new arg list:") (print (create-the-list n '() ))
+ ; (print "var args:")
+ ; (print "n:") (print n)
+;  (print "line obj var:") (print (ask line-obj 'text ))
+ ; (print "number of args:") (print (count-the-list n 0))
+;  (print "new arg list:") (print (create-the-list n '() ))
   ;(create-the-list n '())
   (collect-positive-integer-args (count-the-list n 0) line-obj env)
   ;(error "end")
 )
 (define (collect-default-negative-args n line-obj env)
-  (print "default negative arg eval")
+ ; (print "default negative arg eval")
   (if (eq? (abs n) (count-the-list (ask line-obj 'text ) 0))
     (collect-positive-integer-args (abs n) line-obj env)
     (collect-variable-n-args (ask line-obj 'text ) line-obj env)
   )
 )
 (define (collect-positive-integer-args n line-obj env)
-  (print "normal integer argument evaluation")
-  (print "line obj:") (print (ask line-obj 'text )) (print "n in pos:") (print n) 
+ ; (print "normal integer argument evaluation")
+  ;(print "line obj:") (print (ask line-obj 'text )) (print "n in pos:") (print n) 
   
       (let ((next (logo-eval line-obj env)))
                     (cons next (collect-n-args (- n 1) line-obj env)) 
@@ -395,8 +460,8 @@ that will be #T in this situation, #F otherwise.) |#
 )
 
 (define (collect-n-args n line-obj env)
-  (print "n:")
-  (print n)
+ ; (print "n:")
+  ;(print n)
   (cond ((list? n) (collect-variable-n-args n line-obj env))
         ((= n 0) '())
         ((and (< n 0) (not (ask line-obj 'empty? ))) (collect-default-negative-args n line-obj env))
@@ -433,7 +498,7 @@ that will be #T in this situation, #F otherwise.) |#
 ;;; definitions
 
 (define (definition? exp)
-  (eq? exp 'to))
+  (eq? exp 'to ))
 
 ;;; procedures
 

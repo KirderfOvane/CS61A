@@ -15,7 +15,7 @@
   (method (next)
       ;(print text)
       (if (null? text)
-          (print "line-obj says: there is nothing left to evaluate")
+          '() ;(print "line-obj says: there is nothing left to evaluate")
           (let
               (
                 (token (car text))
@@ -28,6 +28,9 @@
   (method (put-back token)
     (set! text (append text (list token)))
     text)
+  (method (put-in-front token)
+    (set! text (append (list token) text))
+  )
 )  
 #|  (define-class (line-object line)
     (method (empty?) (null? line))
@@ -86,7 +89,7 @@
 ;;; Problem 4   variables   (logo-meta.scm is also affected)
 
 (define (make env var val) 
-  (error "make not written yet!") 
+  (error "make not written yet!") ;see logo-meta.scm
   '=no-value= ) 
 
 

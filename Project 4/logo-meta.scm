@@ -38,14 +38,13 @@
   ) |#
   ;correct
   (define (eval-line line-obj env)
-   ; (print "eval-linetime")
+    (print "eval-linetime")
    ; (print (ask line-obj 'empty? ))
     (define (loop)
       (if (ask line-obj 'empty? )
           '=no-value=
           (let ((val (logo-eval line-obj env)))
-          ;  (print "eval-line val")
-          ;  (print val)
+            (display "eval-line val:") (print val)
               (if (eq? val '=no-value= )
                   (loop)
                   val
@@ -129,6 +128,7 @@
 ;;; Problem B5    eval-definition
 
 (define (make? line-obj)
+  (print "found make!")
   (if (eq? line-obj 'make )
     #t
     #f
@@ -139,7 +139,7 @@
 (define make-value cadr)
 
 (define (eval-make line-obj env)
-  ;(print (ask line-obj 'text ))
+  (print (ask line-obj 'text ))
   ;(print "var name:") (print (make-var-name (ask line-obj 'text )))
   ;(print "value:") (print (make-value (ask line-obj 'text )))
   ;(print "checking if var exists:") (print (lookup-variable-value (make-var-name (ask line-obj 'text )) env))
@@ -187,21 +187,52 @@ pr2nd defined
         (body '())
       )
       (set! body (eval-def-loop body))
-      (print "the-procedures:")
-      (print the-procedures)
-      (print "the-primitive-procedures:") (print the-primitive-procedures)
-      (set! the-procedures (cons (list name 'compound arg-count (cons formals body)) the-procedures))
+      ;(print "the-procedures:")
+      ;(print the-procedures)
+      ;(print "the-primitive-procedures:") (print the-primitive-procedures)
+      (add-compound name arg-count (cons formals body))
       (print "AFTER") (print the-procedures) ;TODO: compound should be formatted as lambda proc or as is now?
       ;(print (list name 'compound arg-count (cons formals body)))
     )
   )
-
+(define (add-compound name count proc)
+  (set! the-procedures
+	(cons (list name 'compound count proc)
+	      the-procedures)))
 
 ;;; Problem 6    eval-sequence
-
+(define comp-arg-count caddr)
+(define comp-proc cadddr)
+(define comp-proc-args car)
+(define comp-proc-body cdr)
+(define argvar-from-env caar)
+(define argval-from-env cadar)
 (define (eval-sequence exps env)
-  (error "eval-sequence not written yet!"))
+  (print "eval-sequence ran")
+  (display "exps: ") (print exps)
+  (display "env: ") (print env)
+  ;(print (argvar-from-env env))
+  ;(define-variable! (argvar-from-env env) (argval-from-env) env)
+  
+ (define local-env (make-frame (car exps) env))
+ (print local-env)
+  (display "logoeval: ") (eval-line (make-line-obj exps) local-env)
+  
+;convert to line-obj. Is exps a instruction list or is it many instruction lists?
+;either return =NO-VALUE= or "You don't say what to do with"
+;if procedure STOP, return =NO-VALUE=
+;if procedure OUTPUT return the cdr of output-pair ,which is the value.
+  ;(error "eval-sequence not written yet!")
+  )
 
+;testing
+#| 
+(load "init.scm")
+to test :thing
+sum 55 :thing
+end 
+test 45
+|#
 
 
 
@@ -400,15 +431,27 @@ pr2nd defined
   (eval-helper #f))
 
 (define (logo-apply procedure arguments)
- ; (print "logo-apply:")
- ; (print "procedure:") (print procedure)
- ; (print "arguments:") (print arguments)
-  (cond ((primitive-procedure? procedure)
-         (apply-primitive-procedure procedure arguments))
-        ((compound-procedure? procedure)
-	 (error "Compound procedures not implemented yet."))
+  (cond ((primitive-procedure? procedure) (apply-primitive-procedure procedure arguments))
+        ((compound-procedure? procedure) 
+          ;(begin (display "procedure: ") (print procedure) (display "arguments: ") (print arguments) 
+          (eval-sequence (comp-proc procedure) arguments)
+            ;(extend-environment
+             ;(comp-proc-args (comp-proc procedure))
+             ;arguments
+             ;the-procedures));(eval-sequence procedure arguments) 
+            ;(error "Compound procedures not implemented yet.")
+          ) )
         (else
          (error "Unknown procedure type -- LOGO-APPLY " procedure))))
+
+;testing
+#| 
+(load "init.scm")
+to test :thing
+sum 55 :thing
+end 
+test 45
+|#
 
 
   (define (count-the-list li counter)
@@ -503,7 +546,7 @@ pr2nd defined
 ;;; procedures
 
 (define (lookup-procedure name)
-  (assoc name the-procedures))
+  (assoc name the-procedures));<--
 
 (define (primitive-procedure? p)
   (eq? (cadr p) 'primitive))

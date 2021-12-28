@@ -32,20 +32,6 @@
     (set! text (append (list token) text))
   )
 )  
-#|  (define-class (line-object line)
-    (method (empty?) (null? line))
-    (method (next)
-      (if (ask self 'empty? )
-          (logo-error "Next called on empty line" self)
-          (let ((token (car line)))
-               (set! line (cdr line))
-                token
-          )
-      )
-    )
-    (method (put-back token)
-      (set! line (cons token line)))
-  )  |#
 
 ;;; Problem A1   make-line-obj
 

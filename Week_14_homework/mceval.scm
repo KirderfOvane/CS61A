@@ -37,6 +37,7 @@
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
+           (display procedure) (error "quitting")
          (eval-sequence
            (procedure-body procedure)
            (extend-environment

@@ -1,6 +1,7 @@
 
 ;;; logo.scm         part of programming project #4
 (define-class (line-object text)
+  (class-vars (step #f))
 	(method (remove)
 		(if (null? text)
 			(print "line-obj says: No more text to evaluate")
@@ -13,9 +14,8 @@
   ;to be read in the line, and remove
   ;that token from the list.
   (method (next)
-      ;(print text)
       (if (null? text)
-          '() ;(print "line-obj says: there is nothing left to evaluate")
+          '() 
           (let
               (
                 (token (car text))
@@ -30,6 +30,12 @@
     text)
   (method (put-in-front token)
     (set! text (append (list token) text))
+  )
+  (method (activate-step)
+      (set! step #t)
+  )
+  (method (deactivate-step)
+      (set! step #f)
   )
 )  
 

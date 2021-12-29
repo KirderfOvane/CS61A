@@ -21,9 +21,16 @@
     (define (loop)
       (if (ask line-obj 'empty? )
           '=no-value=
-          (let ((val (logo-eval line-obj env)))
+          (let ((val (logo-eval line-obj env)) (steplist (lookup-variable-value step env)))
               (if (eq? val '=no-value= )
-                  (loop)
+                  (if (or (eq? steplist #f) (null? steplist))
+                    (loop)
+                    (begin 
+                      (prompt (car steplist)) (prompt ">>>")
+                      (set-variable-value! step (cdr steplist) the-global-environment) 
+                      (logo-read) (loop)
+                    )
+                  )
                   val
               )
           )
@@ -198,6 +205,33 @@ print test 45 35
 |#
 
 
+; Person A A8, STEP IMPLEMENTATION
+
+(define (step wrd)
+  (if (lookup-procedure wrd)
+    (if (compound-procedure? (lookup-procedure wrd)) 
+        (begin 
+          (print (reverse (cadr (cadddr (lookup-procedure wrd))))) 
+          (define-variable! step (reverse (cadr (cadddr (lookup-procedure wrd)))) the-global-environment)
+        )
+        (error "not a compound procedure" wrd)
+    )
+    (error "proc NOT found")
+  )
+)
+;testing
+#| 
+(load "init.scm")
+to garply
+print "hello
+print "goodbye
+end
+garply
+step "garply
+
+
+unstep "garply 
+|#
 
 ;;; SETTING UP THE ENVIRONMENT
 
@@ -245,11 +279,11 @@ print test 45 35
 (add-prim 'listp 1 (logo-pred list?))
 (add-prim 'wordp 1 (logo-pred (lambda (x) (not (list? x)))))
 
-(add-prim 'stop 0 (lambda () '=stop=))
+(add-prim 'stop 0 (lambda () '=stop= ))
 (add-prim 'output 1 (lambda (x) (cons '=output= x)))
 (add-prim 'op 1 (lambda (x) (cons '=output= x)))
 
-(define (pcmd proc) (lambda args (apply proc args) '=no-value=))
+(define (pcmd proc) (lambda args (apply proc args) '=no-value= ))
 (add-prim 'cs 0 (pcmd cs))
 (add-prim 'clearscreen 0 (pcmd cs))
 (add-prim 'fd 1 (pcmd fd))
@@ -261,8 +295,8 @@ print test 45 35
 (add-prim 'rt 1 (pcmd rt))
 (add-prim 'right 1 (pcmd rt))
 (add-prim 'setxy 2 (pcmd setxy))
-(add-prim 'setx 1 (lambda (x) (setxy x (ycor)) '=no-value=))
-(add-prim 'sety 1 (lambda (y) (setxy (xcor) y) '=no-value=))
+(add-prim 'setx 1 (lambda (x) (setxy x (ycor)) '=no-value= ))
+(add-prim 'sety 1 (lambda (y) (setxy (xcor) y) '=no-value= ))
 (add-prim 'xcor 0 xcor)
 (add-prim 'ycor 0 ycor)
 (add-prim 'pos 0 pos)
@@ -289,6 +323,7 @@ print test 45 35
 (add-prim 'setbackground 1 (pcmd setbg))
 
 (add-prim 'load 1 meta-load)
+(add-prim 'step 1 (lambda (w) (step w)))
 
 (define the-global-environment '())
 (define the-procedures the-primitive-procedures)

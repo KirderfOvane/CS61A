@@ -18,26 +18,74 @@
 
 ;;; Problem B1    eval-line
   (define (eval-line line-obj env)
+    (define (check-if-inside-step-procedure li)
+      (if (null? li)
+        #f
+        (if (eq? (procedure-name (car li)) (car (ask line-obj 'text )))
+            (cadr (cadddr (car li))) 
+            (check-if-inside-step-procedure (cdr li))
+        )
+      )
+    )
+    (define (steploop li)
+      (if (null? li)
+        (begin (ask line-obj 'next ) (loop)) 
+        (begin 
+          (prompt (car li)) (prompt ">>>")
+          (logo-read) (steploop (cdr li))
+        )
+      )
+    )
     (define (loop)
+      (define (normal-loop)
+          (let
+            (
+              (val (logo-eval line-obj env))
+            )
+            (if (eq? val '=no-value= )
+                (loop)
+                val
+            )
+          )
+      )
       (if (ask line-obj 'empty? )
           '=no-value=
-          (let ((val (logo-eval line-obj env)) (steplist (lookup-variable-value step env)))
-              (if (eq? val '=no-value= )
-                  (if (or (eq? steplist #f) (null? steplist))
-                    (loop)
-                    (begin 
-                      (prompt (car steplist)) (prompt ">>>")
-                      (set-variable-value! step (cdr steplist) the-global-environment) 
-                      (logo-read) (loop)
-                    )
-                  )
-                  val
+          (let
+              (
+                (steplist (lookup-variable-value step env)) 
               )
+              (if (or (eq? steplist #f) (null? steplist))
+                (normal-loop) ;if no step procedures exist, do normal evaluation.
+                (let 
+                  (
+                    (step-proc (check-if-inside-step-procedure steplist)) ;if step proc. exist, check if it is this step proc we have invoked
+                  )
+                  (if step-proc
+                    (steploop step-proc)
+                    (normal-loop)
+                  )
+                )
+              ) 
           )
       )
     )
     (loop)
   )
+
+
+#| 
+(load "init.scm")
+to garply
+print "hello
+print "goodbye
+end
+garply
+step "garply
+garply
+[enter] [enter]
+unstep "garply 
+garply -> back to normal
+|#
 
 ;;; Problem 4    variables  (other procedures must be modified, too)
 ;;; data abstraction procedures
@@ -141,9 +189,11 @@ pr2nd defined
             (
               (line-reading (logo-read))
             )
+            ;(display "lineread: ") (print line-reading)
+            ;(display "body: ") (print body)
             (if (member? 'end line-reading)
                 body
-                (eval-def-loop (append line-reading body))
+                (eval-def-loop (append body (list line-reading)))
             )
           )
     )
@@ -155,6 +205,7 @@ pr2nd defined
         (body '())
       )
       (set! body (eval-def-loop body))
+      (print body)
       (add-compound name arg-count (list formals body))
     )
   )
@@ -173,12 +224,15 @@ pr2nd defined
 ;if procedure STOP, return =NO-VALUE=
 ;if procedure OUTPUT return the cdr of output-pair ,which is the value.
 (define (eval-sequence exps env)
+  ;(print "eval seq ran")
+ ; (display "exps: ") (print exps)
  (if (null? exps)
     '=NO-VALUE=
     (let
       (
         (response (eval-line (make-line-obj (car exps)) env))
       )
+      ;(display "eval-seq response: " ) (print response)
       (cond 
         ((equal? response '=stop= ) '=NO-VALUE= )
         ((and (list? response) (equal? (car response) '=output= )) (cdr response))
@@ -206,13 +260,46 @@ print test 45 35
 
 
 ; Person A A8, STEP IMPLEMENTATION
-
+(define (unstep wrd)
+  (let 
+    (
+      (proc (lookup-procedure wrd))
+    )
+    (if (compound-procedure? proc)
+        (remove-step-var (procedure-name proc))
+        (error "not a proc" wrd)
+    )
+  )
+)
+(define (remove-step-var proc-name)
+  (define (inner-loop step-li filtered-results)
+    (if (null? step-li)
+      filtered-results
+      (if (eq? (procedure-name (car step-li)) proc-name)
+          (inner-loop (cdr step-li) filtered-results)
+          (inner-loop (cdr step-li) (append (car step-li) filtered-results))
+      )
+    )
+  )
+  (begin 
+    (display "removeresult: " ) 
+    (print (inner-loop (lookup-variable-value step the-global-environment) '()))
+    (set-variable-value! step (inner-loop (lookup-variable-value step the-global-environment) '()) the-global-environment) 
+    '=no-value= 
+  )
+)
 (define (step wrd)
+  (define (add-to-step-var new-val env)
+    (if (lookup-variable-value step env)
+      (begin (set-variable-value! step (append step new-val) env) '=no-value= )
+      (begin (define-variable! step (list new-val) env) '=no-value= )
+    )
+  )
   (if (lookup-procedure wrd)
     (if (compound-procedure? (lookup-procedure wrd)) 
         (begin 
-          (print (reverse (cadr (cadddr (lookup-procedure wrd))))) 
-          (define-variable! step (reverse (cadr (cadddr (lookup-procedure wrd)))) the-global-environment)
+          (print (lookup-procedure wrd)) (print (reverse (cadr (cadddr (lookup-procedure wrd))))) 
+          (add-to-step-var (lookup-procedure wrd) the-global-environment)
         )
         (error "not a compound procedure" wrd)
     )
@@ -228,7 +315,7 @@ print "goodbye
 end
 garply
 step "garply
-
+garply
 
 unstep "garply 
 |#
@@ -324,6 +411,7 @@ unstep "garply
 
 (add-prim 'load 1 meta-load)
 (add-prim 'step 1 (lambda (w) (step w)))
+(add-prim 'unstep 1 (lambda (w) (unstep w)))
 
 (define the-global-environment '())
 (define the-procedures the-primitive-procedures)
@@ -421,7 +509,9 @@ unstep "garply
 (define (logo-apply procedure arguments env)
   (cond ((primitive-procedure? procedure) (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure) 
-          (eval-sequence (procedure-body procedure) 
+          ;(display "proc: ") (print procedure)
+          ;(display "proc body: ") (print (car (procedure-body procedure)))
+          (eval-sequence (car (procedure-body procedure))
             (extend-environment
              (procedure-parameters procedure)
              arguments
@@ -529,6 +619,8 @@ unstep "garply
   (cadddr proc))
 
 (define (parameters proc) (car (text proc)))
+
+(define (procedure-name proc) (car proc))
 
 (define (procedure-parameters proc) (car (text proc)))
 

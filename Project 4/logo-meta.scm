@@ -189,8 +189,6 @@ pr2nd defined
             (
               (line-reading (logo-read))
             )
-            ;(display "lineread: ") (print line-reading)
-            ;(display "body: ") (print body)
             (if (member? 'end line-reading)
                 body
                 (eval-def-loop (append body (list line-reading)))
@@ -224,15 +222,12 @@ pr2nd defined
 ;if procedure STOP, return =NO-VALUE=
 ;if procedure OUTPUT return the cdr of output-pair ,which is the value.
 (define (eval-sequence exps env)
-  ;(print "eval seq ran")
- ; (display "exps: ") (print exps)
  (if (null? exps)
     '=NO-VALUE=
     (let
       (
         (response (eval-line (make-line-obj (car exps)) env))
       )
-      ;(display "eval-seq response: " ) (print response)
       (cond 
         ((equal? response '=stop= ) '=NO-VALUE= )
         ((and (list? response) (equal? (car response) '=output= )) (cdr response))
@@ -509,8 +504,6 @@ unstep "garply
 (define (logo-apply procedure arguments env)
   (cond ((primitive-procedure? procedure) (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure) 
-          ;(display "proc: ") (print procedure)
-          ;(display "proc body: ") (print (car (procedure-body procedure)))
           (eval-sequence (car (procedure-body procedure))
             (extend-environment
              (procedure-parameters procedure)

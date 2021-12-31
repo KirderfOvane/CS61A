@@ -175,15 +175,27 @@ pr2nd defined
 
 |#
 
+; (load "init.scm") to count :increase static :counter 2+3
 
-(define (eval-definition line-obj)
-    (define (var->formal v)
-      (if (variable? v)
-          (begin (print (variable-name v)) (variable-name v))
-          (error "you did not provide a valid input")
+(define (eval-definition line-obj env)
+  (display "eval def ran: ") (print (ask line-obj 'text ))
+    (define (handle-formals line-obj)
+      (let
+        (
+          (next (ask line-obj 'next ))
+        )
+        (cond 
+          ((null? next) '() )
+          ((variable? next) (begin (variable-name next) (handle-formals line-obj)))
+          ((static? next) '() )
+          (else (error "INVALID FORMALS"))
+        )
       )
     )
-    (define (eval-def-loop body)
+    (define (handle-statics line-obj)
+            (extend-environment (list (ask line-obj 'next ) ) (list (logo-eval line-obj env)) env)
+    )
+    (define (eval-def-loop body env)
           (prompt "-> ")
           (let
             (
@@ -191,7 +203,7 @@ pr2nd defined
             )
             (if (member? 'end line-reading)
                 body
-                (eval-def-loop (append body (list line-reading)))
+                (eval-def-loop (append body (list line-reading)) env)
             )
           )
     )
@@ -199,12 +211,13 @@ pr2nd defined
       (
         (name (ask line-obj 'next ))
         (arg-count (length (ask line-obj 'text )))
-        (formals  (map (lambda (var?) (var->formal var?)) (ask line-obj 'text )))
+        (formals (handle-formals line-obj))
+        (statics (handle-statics line-obj))
         (body '())
       )
-      (set! body (eval-def-loop body))
-      (print body)
-      (add-compound name arg-count (list formals body))
+      (display "statics:") (print statics)
+      (set! body (eval-def-loop body env))
+      (add-compound name arg-count (list formals statics body))
     )
   )
 
@@ -231,7 +244,7 @@ pr2nd defined
       (cond 
         ((equal? response '=stop= ) '=NO-VALUE= )
         ((and (list? response) (equal? (car response) '=output= )) (cdr response))
-        ((not (equal? response '=NO-VALUE= )) (error "You don't say what to do with " response))
+        ((not (equal? response '=NO-VALUE= )) (logo-print (list "You don't say what to do with " response)))
         (else (eval-sequence (cdr exps) env))
       )
     )
@@ -314,6 +327,25 @@ garply
 
 unstep "garply 
 |#
+
+; 9 Static variables implementation:
+
+;How it should work / Testing:
+#| 
+
+to count :increase static :counter 2+3
+make "counter :counter + :increase
+print :counter
+end
+
+count 20
+count 1 
+
+print :counter
+|#
+
+
+
 
 ;;; SETTING UP THE ENVIRONMENT
 
@@ -465,12 +497,13 @@ unstep "garply
   (handle-infix (eval-prefix line-obj env) line-obj env))
 
 (define (eval-prefix line-obj env)
+  (print (ask line-obj 'text ))
   (define (eval-helper paren-flag)
     (let ((token (ask line-obj 'next )))
       (cond ((self-evaluating? token) token)
             ((variable? token) (lookup-variable-value (variable-name token) env))
             ((quoted? token) (text-of-quotation token))
-            ((definition? token) (eval-definition line-obj))
+            ((definition? token) (eval-definition line-obj env))
             ((make? token) (eval-make line-obj env))
             ((left-paren? token)
               (let ((result (handle-infix (eval-helper #t) line-obj env)))
@@ -588,6 +621,12 @@ unstep "garply
 (define (left-paren? exp) (eq? exp left-paren-symbol))
 
 (define (right-paren? exp) (eq? exp right-paren-symbol))
+
+;;; statics
+
+(define (static? exp)
+  (eq? exp 'static )
+)
 
 ;;; definitions
 

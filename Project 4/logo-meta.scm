@@ -52,9 +52,9 @@
           '=no-value=
           (let
               (
-                (steplist (lookup-variable-value step env)) 
+                (steplist (lookup-variable-value 'step-active-proc env))
               )
-              (if (or (eq? steplist #f) (null? steplist))
+              (if (eq? steplist #f) 
                 (normal-loop) ;if no step procedures exist, do normal evaluation.
                 (let 
                   (
@@ -96,6 +96,9 @@ garply -> back to normal
       #f
   )
 )         
+
+
+
 
 (define (variable-name exp)
   (bf exp)
@@ -151,7 +154,7 @@ garply -> back to normal
 )
 
 (define make-var-name (lambda (x) (bf (car x))))
-(define make-value cadr)
+(define make-value cdr)
 
 (define (eval-make line-obj env)
   (if (lookup-variable-value (make-var-name (ask line-obj 'text )) env)
@@ -160,40 +163,38 @@ garply -> back to normal
   )
 )
 
-#| Testing eval-make
-
-to pr2nd :thing
-print first bf :thing
-end 
-
-ui on writing:
-? to pr2nd :thing
-> print first bf :thing
-> end
-pr2nd defined
-? 
-
-|#
-
-; (load "init.scm") to count :increase static :counter 2+3
 
 (define (eval-definition line-obj env)
-  (display "eval def ran: ") (print (ask line-obj 'text ))
-    (define (handle-formals line-obj)
-      (let
-        (
-          (next (ask line-obj 'next ))
-        )
-        (cond 
-          ((null? next) '() )
-          ((variable? next) (begin (variable-name next) (handle-formals line-obj)))
-          ((static? next) '() )
-          (else (error "INVALID FORMALS"))
-        )
+    (define (handle-formals line-obj formals-li)
+      (if (ask line-obj 'empty? )
+          formals-li
+          (let
+            (
+              (next (ask line-obj 'next ))
+            )
+            (cond 
+              ((null? next) formals-li )
+              ((variable? next) (handle-formals line-obj (append formals-li (list next))))
+              ((static? next) formals-li )
+              (else (error "INVALID FORMALS"))
+            )
+          )
       )
     )
     (define (handle-statics line-obj)
-            (extend-environment (list (ask line-obj 'next ) ) (list (logo-eval line-obj env)) env)
+            (if (ask line-obj 'empty? )
+                '()
+                (begin
+                  (let
+                    (
+                      (static-env (extend-environment (list (ask line-obj 'next ) ) (list (logo-eval line-obj env)) env))
+                    )
+                    (display "statics env:") 
+                    (print static-env)
+                    static-env
+                  )
+                )
+            )
     )
     (define (eval-def-loop body env)
           (prompt "-> ")
@@ -210,14 +211,12 @@ pr2nd defined
     (let
       (
         (name (ask line-obj 'next ))
-        (arg-count (length (ask line-obj 'text )))
-        (formals (handle-formals line-obj))
+        (formals (handle-formals line-obj '()))
         (statics (handle-statics line-obj))
         (body '())
       )
-      (display "statics:") (print statics)
       (set! body (eval-def-loop body env))
-      (add-compound name arg-count (list formals statics body))
+      (add-compound name (length formals) (list formals statics body))
     )
   )
 
@@ -251,22 +250,6 @@ pr2nd defined
  )
 )
 
-;testing
-#| 
-(load "init.scm")
-to test :thing
-sum 55 :thing
-end 
-test 45
-
-(load "init.scm")
-to test :thing :fang
-sum 55 :thing :fang
-end 
-print test 45 35
-|#
-
-
 ; Person A A8, STEP IMPLEMENTATION
 (define (unstep wrd)
   (let 
@@ -291,16 +274,16 @@ print test 45 35
   )
   (begin 
     (display "removeresult: " ) 
-    (print (inner-loop (lookup-variable-value step the-global-environment) '()))
-    (set-variable-value! step (inner-loop (lookup-variable-value step the-global-environment) '()) the-global-environment) 
+    (print (inner-loop (lookup-variable-value step-active-proc the-global-environment) '()))
+    (set-variable-value! step-active-proc (inner-loop (lookup-variable-value step-active-proc the-global-environment) '()) the-global-environment) 
     '=no-value= 
   )
 )
 (define (step wrd)
   (define (add-to-step-var new-val env)
-    (if (lookup-variable-value step env)
-      (begin (set-variable-value! step (append step new-val) env) '=no-value= )
-      (begin (define-variable! step (list new-val) env) '=no-value= )
+    (if (lookup-variable-value step-active-proc env)
+      (begin (set-variable-value! step-active-proc (append step-active-proc new-val) env) '=no-value= )
+      (begin (define-variable! step-active-proc (list new-val) env) '=no-value= )
     )
   )
   (if (lookup-procedure wrd)
@@ -327,25 +310,6 @@ garply
 
 unstep "garply 
 |#
-
-; 9 Static variables implementation:
-
-;How it should work / Testing:
-#| 
-
-to count :increase static :counter 2+3
-make "counter :counter + :increase
-print :counter
-end
-
-count 20
-count 1 
-
-print :counter
-|#
-
-
-
 
 ;;; SETTING UP THE ENVIRONMENT
 
@@ -497,7 +461,6 @@ print :counter
   (handle-infix (eval-prefix line-obj env) line-obj env))
 
 (define (eval-prefix line-obj env)
-  (print (ask line-obj 'text ))
   (define (eval-helper paren-flag)
     (let ((token (ask line-obj 'next )))
       (cond ((self-evaluating? token) token)
@@ -537,12 +500,11 @@ print :counter
 (define (logo-apply procedure arguments env)
   (cond ((primitive-procedure? procedure) (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure) 
-          (eval-sequence (car (procedure-body procedure))
+          (eval-sequence (procedure-body procedure)
             (extend-environment
              (procedure-parameters procedure)
              arguments
              env))
-            
         )
         (else
          (error "Unknown procedure type -- LOGO-APPLY " procedure)
@@ -656,7 +618,7 @@ print :counter
 
 (define (procedure-parameters proc) (car (text proc)))
 
-(define (procedure-body proc) (cdr (text proc)))
+(define (procedure-body proc) (caddr (text proc)))
 
 ;;; Section 4.1.3
 
@@ -688,17 +650,37 @@ print :counter
 (define (lookup-variable-value var env)
   (define (env-loop env)
     (define (scan vars vals)
-      (cond ((null? vars)
-             (env-loop (enclosing-environment env)))
-            ((equal? var (car vars))
-             (car vals))
+      (cond ((null? vars) (env-loop (enclosing-environment env)))
+            ((equal? var (car vars)) (car vals))
             (else (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
-        #f;(error "Unbound variable " var)
+        #f
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
   (env-loop env))
+
+;testing:
+#| 
+
+(load "init.scm")
+make "foo 27
+print :foo
+
+(load "init.scm")
+to sumitup :one :two
+print sum :one :two
+end
+sumitup 3 7 
+
+(load "init.scm")
+to count :increase static :counter 2+3
+make "counter :counter + :increase
+print :counter
+end
+count 20 
+
+|#
 
 (define (set-variable-value! var val env)
   (define (env-loop env)

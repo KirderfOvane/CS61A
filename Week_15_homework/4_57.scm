@@ -23,7 +23,7 @@ all people who can replace someone who is being paid more than they are, togethe
 
 
 ;queries:
-(standin (Cy D. Fect) ?y)
+(standin (fect cy d) ?y)
 (and (standin ?x ?y)
      (salary ?y ?x)
      (salary ?y ?amount)
